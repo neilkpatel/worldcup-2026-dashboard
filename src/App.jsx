@@ -7,6 +7,14 @@ import Schedule from './components/Schedule'
 const TABS = ['Today', 'Groups', 'Schedule']
 const REFRESH_MS = 60_000
 
+// The IANA zone + short label of the viewer's machine — every kickoff time on the
+// dashboard is converted into this zone, so label it explicitly.
+const TZ_NAME = Intl.DateTimeFormat().resolvedOptions().timeZone
+const TZ_SHORT =
+  new Intl.DateTimeFormat('en-US', { timeZoneName: 'short' })
+    .formatToParts(new Date())
+    .find((p) => p.type === 'timeZoneName')?.value ?? ''
+
 function App() {
   const [tab, setTab] = useState('Today')
   const [matches, setMatches] = useState([])
@@ -73,11 +81,15 @@ function App() {
               </button>
             ))}
           </nav>
-          {updatedAt && (
-            <span className="ml-auto text-xs text-slate-500">
-              Updated {updatedAt.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
-            </span>
-          )}
+          <div className="ml-auto text-right text-xs text-slate-500">
+            <div>🕐 Times in {TZ_NAME} ({TZ_SHORT})</div>
+            {updatedAt && (
+              <div>
+                Updated{' '}
+                {updatedAt.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+              </div>
+            )}
+          </div>
         </div>
       </header>
 
