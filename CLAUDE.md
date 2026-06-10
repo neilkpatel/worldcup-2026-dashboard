@@ -29,4 +29,7 @@ Not deployed anywhere — runs at http://localhost:5173 via `npm run dev`.
 - `src/api.js` — fetch + parse for scoreboard/standings, team→group map
 - `src/components/Today.jsx` — live/today/next-day/yesterday sections
 - `src/components/Groups.jsx` — 12 group tables (green = top 2, amber = 3rd)
+- `src/components/Bracket.jsx` — knockout bracket R32→final + 3rd-place match;
+  reads `match.round` (ESPN season slug), fills slots as teams qualify
 - `src/components/Schedule.jsx` — full schedule grouped by day, team filter
+- `src/stakes.js` — matchday-aware qualification implications (conservative math)
