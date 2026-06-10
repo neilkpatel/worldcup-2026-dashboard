@@ -1,0 +1,108 @@
+import { useEffect, useMemo, useState } from 'react'
+import { fetchSchedule, fetchStandings, buildGroupMap } from './api'
+import Today from './components/Today'
+import Groups from './components/Groups'
+import Schedule from './components/Schedule'
+
+const TABS = ['Today', 'Groups', 'Schedule']
+const REFRESH_MS = 60_000
+
+function App() {
+  const [tab, setTab] = useState('Today')
+  const [matches, setMatches] = useState([])
+  const [groups, setGroups] = useState([])
+  const [updatedAt, setUpdatedAt] = useState(null)
+  const [error, setError] = useState(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let cancelled = false
+    async function load() {
+      try {
+        const [schedule, standings] = await Promise.all([
+          fetchSchedule(),
+          fetchStandings(),
+        ])
+        if (cancelled) return
+        setMatches(schedule)
+        setGroups(standings)
+        setUpdatedAt(new Date())
+        setError(null)
+      } catch (err) {
+        if (!cancelled) setError(err.message)
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+    load()
+    const interval = setInterval(load, REFRESH_MS)
+    return () => {
+      cancelled = true
+      clearInterval(interval)
+    }
+  }, [])
+
+  const groupMap = useMemo(() => buildGroupMap(groups), [groups])
+  const liveCount = matches.filter((m) => m.state === 'in').length
+
+  return (
+    <div className="min-h-screen bg-slate-950 text-slate-100">
+      <header className="sticky top-0 z-10 border-b border-slate-800 bg-slate-950/90 backdrop-blur">
+        <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-4">
+          <h1 className="text-xl font-bold tracking-tight">
+            <span className="mr-2">⚽</span>World Cup 2026
+          </h1>
+          {liveCount > 0 && (
+            <span className="flex items-center gap-1.5 rounded-full bg-emerald-500/15 px-3 py-1 text-xs font-semibold text-emerald-400">
+              <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
+              {liveCount} LIVE
+            </span>
+          )}
+          <nav className="flex gap-1">
+            {TABS.map((t) => (
+              <button
+                key={t}
+                onClick={() => setTab(t)}
+                className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                  tab === t
+                    ? 'bg-emerald-600 text-white'
+                    : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
+                }`}
+              >
+                {t}
+              </button>
+            ))}
+          </nav>
+          {updatedAt && (
+            <span className="ml-auto text-xs text-slate-500">
+              Updated {updatedAt.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+            </span>
+          )}
+        </div>
+      </header>
+
+      <main className="mx-auto max-w-5xl px-4 py-6">
+        {error && (
+          <div className="mb-4 rounded-lg border border-red-800 bg-red-950/50 px-4 py-3 text-sm text-red-300">
+            Couldn't reach ESPN ({error}) — showing last loaded data.
+          </div>
+        )}
+        {loading ? (
+          <p className="py-16 text-center text-slate-500">Loading tournament data…</p>
+        ) : (
+          <>
+            {tab === 'Today' && (
+              <Today matches={matches} groupMap={groupMap} groups={groups} />
+            )}
+            {tab === 'Groups' && <Groups groups={groups} />}
+            {tab === 'Schedule' && (
+              <Schedule matches={matches} groupMap={groupMap} groups={groups} />
+            )}
+          </>
+        )}
+      </main>
+    </div>
+  )
+}
+
+export default App
