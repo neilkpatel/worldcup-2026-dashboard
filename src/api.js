@@ -26,6 +26,8 @@ function parseEvent(event) {
     id: event.id,
     date: new Date(event.date),
     name: event.name,
+    shortName: event.shortName,
+    round: event.season?.slug ?? 'group-stage', // e.g. 'round-of-32', 'final'
     home: parseTeam(home),
     away: parseTeam(away),
     state: event.status.type.state, // 'pre' | 'in' | 'post'
