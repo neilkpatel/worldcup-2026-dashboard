@@ -1,5 +1,7 @@
 import MatchCard from './MatchCard'
 import Explainer from './Explainer'
+import Recap from './Recap'
+import { lastCompletedDay } from '../recap'
 import { matchStakes, rankByStakes } from '../stakes'
 
 function dayKey(date) {
@@ -54,14 +56,9 @@ function KeyMatches({ matches, groups }) {
 export default function Today({ matches, groupMap, groups }) {
   const now = new Date()
   const todayKey = dayKey(now)
-  const yesterday = new Date(now)
-  yesterday.setDate(now.getDate() - 1)
-  const yesterdayKey = dayKey(yesterday)
 
   const todayMatches = matches.filter((m) => dayKey(m.date) === todayKey)
-  const yesterdayMatches = matches.filter(
-    (m) => dayKey(m.date) === yesterdayKey && m.state === 'post'
-  )
+  const recapMatches = lastCompletedDay(matches, now)
 
   // If nothing today, surface the next match day so the tab is never empty
   let upcoming = []
@@ -85,6 +82,8 @@ export default function Today({ matches, groupMap, groups }) {
   return (
     <div>
       <Explainer />
+      {/* Once a day is over, lead with what happened; during live play it moves below */}
+      {live.length === 0 && <Recap matches={recapMatches} groups={groups} />}
       <KeyMatches matches={primary} groups={groups} />
 
       {live.length > 0 && (
@@ -106,14 +105,7 @@ export default function Today({ matches, groupMap, groups }) {
           groups={groups}
         />
       )}
-      {yesterdayMatches.length > 0 && (
-        <Section
-          title="Yesterday's results"
-          matches={yesterdayMatches}
-          groupMap={groupMap}
-          groups={groups}
-        />
-      )}
+      {live.length > 0 && <Recap matches={recapMatches} groups={groups} />}
       {todayMatches.length === 0 && upcoming.length === 0 && (
         <p className="py-16 text-center text-slate-500">
           No upcoming matches — the tournament is over.

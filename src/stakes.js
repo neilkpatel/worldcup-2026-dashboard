@@ -5,7 +5,7 @@
 // third-placed teams) crosses groups and can't be computed locally, so we flag it
 // as a lifeline rather than asserting it.
 
-const MARQUEE = new Set([
+export const MARQUEE = new Set([
   'Brazil', 'Argentina', 'France', 'England', 'Spain', 'Germany',
   'Portugal', 'Netherlands', 'Belgium', 'Croatia', 'Morocco',
   'United States', 'Mexico', 'Canada',
