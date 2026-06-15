@@ -28,24 +28,28 @@ function Section({ title, matches, groupMap, groups }) {
   )
 }
 
-function KeyMatches({ matches, groups }) {
-  const ranked = rankByStakes(matches, groups).filter(
-    (r) => r.stakes && r.stakes.level !== 'info'
-  )
-  if (ranked.length === 0) return null
+// Compact "what matters right now" panel pinned at the top of the tab.
+function ThingsToWatch({ matches, groups, title }) {
+  const ranked = rankByStakes(matches, groups)
+  // Prefer genuinely consequential matches; if a matchday has none yet
+  // (everything still "info"), fall back to the top fixtures so the panel
+  // still orients the day rather than disappearing.
+  const notable = ranked.filter((r) => r.stakes && r.stakes.level !== 'info')
+  const picks = (notable.length > 0 ? notable : ranked).slice(0, 3)
+  if (picks.length === 0) return null
 
   return (
-    <section className="mb-8 rounded-xl border border-amber-500/30 bg-amber-500/5 p-4">
-      <h2 className="mb-3 text-sm font-semibold tracking-wide text-amber-300 uppercase">
-        ⭐ What's at stake
+    <section className="mb-8">
+      <h2 className="mb-3 text-sm font-semibold tracking-wide text-amber-300/90 uppercase">
+        👀 {title}
       </h2>
       <ul className="space-y-2 text-sm">
-        {ranked.map(({ match, stakes }) => (
+        {picks.map(({ match, stakes }) => (
           <li key={match.id} className="flex flex-col gap-0.5 sm:flex-row sm:gap-2">
             <span className="font-medium text-slate-200 sm:w-56 sm:shrink-0">
               {match.home.name} v {match.away.name}
             </span>
-            <span className="text-slate-400">{stakes.text}</span>
+            <span className="text-slate-400">{stakes?.text}</span>
           </li>
         ))}
       </ul>
@@ -76,15 +80,14 @@ export default function Today({ matches, groupMap, groups }) {
   }
 
   const live = todayMatches.filter((m) => m.state === 'in')
-  // Matches the "key matches" highlight should summarize: today's, else next day's
+  // The "things to watch" panel summarizes today's slate, else the next day's.
   const primary = todayMatches.length > 0 ? todayMatches : upcoming
+  const watchTitle =
+    todayMatches.length > 0 ? 'Things to watch today' : `Coming up · ${upcomingLabel}`
 
   return (
     <div>
-      <Explainer />
-      {/* Once a day is over, lead with what happened; during live play it moves below */}
-      {live.length === 0 && <Recap matches={recapMatches} groups={groups} />}
-      <KeyMatches matches={primary} groups={groups} />
+      <ThingsToWatch matches={primary} groups={groups} title={watchTitle} />
 
       {live.length > 0 && (
         <Section title="Live now" matches={live} groupMap={groupMap} groups={groups} />
@@ -105,12 +108,15 @@ export default function Today({ matches, groupMap, groups }) {
           groups={groups}
         />
       )}
-      {live.length > 0 && <Recap matches={recapMatches} groups={groups} />}
+
       {todayMatches.length === 0 && upcoming.length === 0 && (
         <p className="py-16 text-center text-slate-500">
           No upcoming matches — the tournament is over.
         </p>
       )}
+
+      <Recap matches={recapMatches} groups={groups} />
+      <Explainer />
     </div>
   )
 }

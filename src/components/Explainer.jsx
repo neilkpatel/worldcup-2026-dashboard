@@ -10,7 +10,7 @@ function Item({ q, children }) {
 }
 
 export default function Explainer() {
-  const [open, setOpen] = useState(true)
+  const [open, setOpen] = useState(false)
 
   return (
     <section className="mb-8 rounded-xl border border-slate-800 bg-slate-900/60">

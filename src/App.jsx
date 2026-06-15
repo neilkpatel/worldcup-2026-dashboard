@@ -4,8 +4,9 @@ import Today from './components/Today'
 import Groups from './components/Groups'
 import Bracket from './components/Bracket'
 import Schedule from './components/Schedule'
+import MyTickets from './components/MyTickets'
 
-const TABS = ['Today', 'Groups', 'Bracket', 'Schedule']
+const TABS = ['Today', 'Groups', 'Bracket', 'Schedule', 'My Tickets']
 const REFRESH_MS = 60_000
 
 // The IANA zone + short label of the viewer's machine — every kickoff time on the
@@ -112,6 +113,7 @@ function App() {
             {tab === 'Schedule' && (
               <Schedule matches={matches} groupMap={groupMap} groups={groups} />
             )}
+            {tab === 'My Tickets' && <MyTickets groups={groups} />}
           </>
         )}
       </main>
