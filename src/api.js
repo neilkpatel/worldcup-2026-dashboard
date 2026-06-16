@@ -2,6 +2,8 @@ const SCOREBOARD =
   'https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard'
 const STANDINGS =
   'https://site.web.api.espn.com/apis/v2/sports/soccer/fifa.world/standings?season=2026'
+const NEWS =
+  'https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/news'
 
 // Full tournament window — ESPN returns all 104 matches in one call
 const TOURNAMENT_DATES = '20260611-20260719'
@@ -74,6 +76,24 @@ export async function fetchStandings() {
       })
       .sort((a, b) => a.rank - b.rank),
   }))
+}
+
+// Editorial World Cup headlines from ESPN's news feed. Best-effort: the caller
+// treats a failure as "no headlines" rather than failing the whole dashboard.
+export async function fetchNews() {
+  const res = await fetch(`${NEWS}?limit=50`)
+  if (!res.ok) throw new Error(`news request failed: ${res.status}`)
+  const data = await res.json()
+  return (data.articles ?? [])
+    .map((a) => ({
+      id: a.id,
+      headline: a.headline,
+      description: a.description ?? '',
+      type: a.type ?? '',
+      published: a.published ? new Date(a.published) : null,
+      link: a.links?.web?.href ?? null,
+    }))
+    .filter((a) => a.headline && a.link)
 }
 
 // Map of team id -> group letter, e.g. "A", for labeling match cards

@@ -91,11 +91,28 @@ export function matchStakes(match, groups) {
   const played = Math.max(home.played, away.played)
   const baseLevel = isMarquee(match) ? 'notable' : 'info'
 
-  // Matchday 1 — no games played yet.
+  // Matchday 1 — no games played yet. Vary the angle so a day of openers
+  // doesn't read as the same sentence repeated.
   if (played === 0) {
+    const homeBig = MARQUEE.has(match.home.name)
+    const awayBig = MARQUEE.has(match.away.name)
+    if (homeBig && awayBig) {
+      return {
+        level: 'critical',
+        text: `Heavyweight Group ${letter} opener — ${match.home.name} v ${match.away.name} is a statement game, and the loser is instantly chasing.`,
+      }
+    }
+    if (homeBig || awayBig) {
+      const fav = homeBig ? match.home.name : match.away.name
+      const dog = homeBig ? match.away.name : match.home.name
+      return {
+        level: 'notable',
+        text: `${fav} begin Group ${letter} against ${dog} — the favorites want a fast start, while a result for ${dog} would crack the group open.`,
+      }
+    }
     return {
-      level: baseLevel,
-      text: `Group ${letter} opener. Three points here is a big early cushion in the race for the top two.`,
+      level: 'info',
+      text: `Group ${letter} opener — wide open, so the first three points are precious for both ${match.home.name} and ${match.away.name}.`,
     }
   }
 

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { fetchSchedule, fetchStandings, buildGroupMap } from './api'
+import { fetchSchedule, fetchStandings, fetchNews, buildGroupMap } from './api'
 import Today from './components/Today'
 import Groups from './components/Groups'
 import Bracket from './components/Bracket'
@@ -21,6 +21,7 @@ function App() {
   const [tab, setTab] = useState('Today')
   const [matches, setMatches] = useState([])
   const [groups, setGroups] = useState([])
+  const [news, setNews] = useState([])
   const [updatedAt, setUpdatedAt] = useState(null)
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -29,13 +30,15 @@ function App() {
     let cancelled = false
     async function load() {
       try {
-        const [schedule, standings] = await Promise.all([
+        const [schedule, standings, headlines] = await Promise.all([
           fetchSchedule(),
           fetchStandings(),
+          fetchNews().catch(() => []), // best-effort; never blocks the dashboard
         ])
         if (cancelled) return
         setMatches(schedule)
         setGroups(standings)
+        setNews(headlines)
         setUpdatedAt(new Date())
         setError(null)
       } catch (err) {
@@ -106,7 +109,7 @@ function App() {
         ) : (
           <>
             {tab === 'Today' && (
-              <Today matches={matches} groupMap={groupMap} groups={groups} />
+              <Today matches={matches} groupMap={groupMap} groups={groups} news={news} />
             )}
             {tab === 'Groups' && <Groups groups={groups} />}
             {tab === 'Bracket' && <Bracket matches={matches} />}
