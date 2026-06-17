@@ -1,10 +1,29 @@
+import { buildThirdPlaceRace, buildFormMap } from '../stats'
+
 function rowAccent(rank) {
   if (rank <= 2) return 'border-l-2 border-emerald-500' // top 2 advance
   if (rank === 3) return 'border-l-2 border-amber-500' // best 8 thirds advance
   return 'border-l-2 border-transparent'
 }
 
-function GroupCard({ group }) {
+const FORM_DOT = { W: 'bg-emerald-500', D: 'bg-slate-500', L: 'bg-rose-500' }
+
+function Form({ results }) {
+  if (!results || results.length === 0) return <span className="text-slate-700">–</span>
+  return (
+    <span className="inline-flex gap-0.5">
+      {results.map((r, i) => (
+        <span
+          key={i}
+          title={r}
+          className={`h-1.5 w-1.5 rounded-full ${FORM_DOT[r] ?? 'bg-slate-600'}`}
+        />
+      ))}
+    </span>
+  )
+}
+
+function GroupCard({ group, formMap }) {
   return (
     <div className="rounded-xl border border-slate-800 bg-slate-900 p-4">
       <h3 className="mb-3 font-semibold">{group.name}</h3>
@@ -18,6 +37,7 @@ function GroupCard({ group }) {
             <th className="pb-2 text-center font-normal">L</th>
             <th className="pb-2 text-center font-normal">GD</th>
             <th className="pb-2 text-center font-normal">Pts</th>
+            <th className="pb-2 text-center font-normal">Form</th>
           </tr>
         </thead>
         <tbody>
@@ -37,6 +57,9 @@ function GroupCard({ group }) {
                 {team.gd > 0 ? `+${team.gd}` : team.gd}
               </td>
               <td className="text-center font-bold tabular-nums">{team.points}</td>
+              <td className="py-1.5 text-center">
+                <Form results={formMap[team.id]} />
+              </td>
             </tr>
           ))}
         </tbody>
@@ -45,7 +68,56 @@ function GroupCard({ group }) {
   )
 }
 
-export default function Groups({ groups }) {
+function ThirdPlaceRace({ groups }) {
+  const race = buildThirdPlaceRace(groups)
+  if (race.length === 0) return null
+  // Insert a visual cut-off after the 8th-placed team
+  return (
+    <div className="mt-10">
+      <h2 className="text-lg font-bold text-slate-100">🎟️ Race for the best third-place spots</h2>
+      <p className="mb-4 text-sm text-slate-500">
+        The 8 best of 12 third-placed teams join the round of 32. Ranked by points, then goal
+        difference, then goals scored.
+      </p>
+      <div className="overflow-hidden rounded-lg border border-slate-800">
+        {race.map((t) => (
+          <div key={t.id}>
+            <div
+              className={`flex items-center gap-3 px-3 py-2.5 text-sm ${
+                t.qualifying ? 'bg-emerald-500/10' : 'odd:bg-slate-900/40'
+              }`}
+            >
+              <span className="w-6 shrink-0 text-right tabular-nums text-slate-500">{t.position}</span>
+              <span className="w-6 shrink-0 text-xs text-slate-500">{t.group}</span>
+              {t.logo && <img src={t.logo} alt="" className="h-5 w-5 shrink-0 object-contain" />}
+              <span
+                className={`min-w-0 flex-1 truncate ${
+                  t.qualifying ? 'font-semibold text-emerald-200' : 'text-slate-300'
+                }`}
+              >
+                {t.name}
+              </span>
+              <span className="shrink-0 text-xs text-slate-500">
+                GD {t.gd > 0 ? `+${t.gd}` : t.gd} · GF {t.gf}
+              </span>
+              <span className="w-8 shrink-0 text-right font-bold tabular-nums text-slate-100">
+                {t.points}
+              </span>
+            </div>
+            {t.position === 8 && (
+              <div className="border-t border-dashed border-emerald-600/50 px-3 py-1 text-center text-[10px] font-semibold uppercase tracking-wide text-emerald-500/70">
+                qualification cut-off
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+export default function Groups({ groups, matches = [] }) {
+  const formMap = buildFormMap(matches)
   return (
     <div>
       <p className="mb-4 text-xs text-slate-500">
@@ -54,9 +126,10 @@ export default function Groups({ groups }) {
       </p>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {groups.map((group) => (
-          <GroupCard key={group.name} group={group} />
+          <GroupCard key={group.name} group={group} formMap={formMap} />
         ))}
       </div>
+      <ThirdPlaceRace groups={groups} />
     </div>
   )
 }

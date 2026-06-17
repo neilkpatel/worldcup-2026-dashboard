@@ -4,6 +4,8 @@ const STANDINGS =
   'https://site.web.api.espn.com/apis/v2/sports/soccer/fifa.world/standings?season=2026'
 const NEWS =
   'https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/news'
+const SUMMARY =
+  'https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/summary'
 
 // Full tournament window — ESPN returns all 104 matches in one call
 const TOURNAMENT_DATES = '20260611-20260719'
@@ -39,6 +41,17 @@ function parseEvent(event) {
     venue: comp.venue?.fullName ?? '',
     city: comp.venue?.address?.city ?? '',
     tv: comp.broadcasts?.[0]?.names?.join(' / ') ?? '',
+    // Goal/card scoring plays — carried in the scoreboard call itself, so the
+    // whole-tournament Golden Boot race needs no extra requests.
+    details: (comp.details ?? []).map((d) => ({
+      minute: d.clock?.displayValue ?? '',
+      type: d.type?.text ?? '',
+      teamId: d.team?.id ?? null,
+      scorer: d.athletesInvolved?.[0]?.displayName ?? null,
+      scoringPlay: !!d.scoringPlay,
+      ownGoal: !!d.ownGoal,
+      penalty: !!d.penaltyKick,
+    })),
   }
 }
 
@@ -94,6 +107,85 @@ export async function fetchNews() {
       link: a.links?.web?.href ?? null,
     }))
     .filter((a) => a.headline && a.link)
+}
+
+// Turn ESPN's HTML article body into clean paragraph text (blank-line separated).
+function htmlToText(html) {
+  if (!html) return ''
+  return html
+    .replace(/<\/(p|div|li)>/gi, '\n\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&amp;/g, '&')
+    .replace(/&#39;|&rsquo;/g, "'")
+    .replace(/&quot;/g, '"')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+}
+
+// Per-match recap detail for a finished game: scorers/cards with minute, ESPN's
+// written match report + headline, key team stats, and attendance. Used to make
+// the "Latest results" section feel alive instead of bare scorelines.
+// Best-effort — the caller treats a rejection as "no detail for this match".
+export async function fetchMatchSummary(eventId) {
+  const res = await fetch(`${SUMMARY}?event=${eventId}`)
+  if (!res.ok) throw new Error(`summary request failed: ${res.status}`)
+  const d = await res.json()
+
+  const events = (d.keyEvents ?? [])
+    .filter((k) => {
+      const t = k.type?.text ?? ''
+      return k.scoringPlay || t.includes('Goal') || t.includes('Card')
+    })
+    .map((k) => {
+      const t = k.type?.text ?? ''
+      return {
+        minute: k.clock?.displayValue ?? '',
+        teamId: k.team?.id ?? null,
+        players: (k.participants ?? [])
+          .map((p) => p.athlete?.displayName)
+          .filter(Boolean),
+        isGoal: !!k.scoringPlay || t.includes('Goal'),
+        ownGoal: /own goal/i.test(t),
+        penalty: /penalty/i.test(t),
+        card: t.includes('Red Card') ? 'red' : t.includes('Yellow Card') ? 'yellow' : null,
+      }
+    })
+
+  // Boxscore teams are tagged homeAway, so key stats by side directly.
+  const stats = {}
+  for (const t of d.boxscore?.teams ?? []) {
+    const get = (name) =>
+      t.statistics?.find((s) => s.name === name)?.displayValue ?? null
+    stats[t.homeAway] = {
+      possession: get('possessionPct'),
+      shots: get('totalShots'),
+      onTarget: get('shotsOnTarget'),
+      corners: get('wonCorners'),
+    }
+  }
+
+  return {
+    headline: d.article?.headline ?? null,
+    story: htmlToText(d.article?.story), // ESPN's own written match report
+    attendance: d.gameInfo?.attendance ?? null,
+    events,
+    stats,
+  }
+}
+
+// Map of team id -> { name, abbrev, logo } gleaned from the schedule, so derived
+// views (Golden Boot) can label a scorer's country without another request.
+export function buildTeamLookup(matches) {
+  const map = {}
+  for (const m of matches) {
+    for (const t of [m.home, m.away]) {
+      if (t.id && !map[t.id]) {
+        map[t.id] = { name: t.name, abbrev: t.abbrev, logo: t.logo }
+      }
+    }
+  }
+  return map
 }
 
 // Map of team id -> group letter, e.g. "A", for labeling match cards

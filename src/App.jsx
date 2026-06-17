@@ -2,11 +2,12 @@ import { useEffect, useMemo, useState } from 'react'
 import { fetchSchedule, fetchStandings, fetchNews, buildGroupMap } from './api'
 import Today from './components/Today'
 import Groups from './components/Groups'
+import GoldenBoot from './components/GoldenBoot'
 import Bracket from './components/Bracket'
 import Schedule from './components/Schedule'
 import MyTickets from './components/MyTickets'
 
-const TABS = ['Today', 'Groups', 'Bracket', 'Schedule', 'My Tickets']
+const TABS = ['Today', 'Groups', 'Golden Boot', 'Bracket', 'Schedule', 'My Tickets']
 const REFRESH_MS = 60_000
 
 // The IANA zone + short label of the viewer's machine — every kickoff time on the
@@ -71,12 +72,12 @@ function App() {
               {liveCount} LIVE
             </span>
           )}
-          <nav className="flex gap-1">
+          <nav className="-mx-1 flex gap-1 overflow-x-auto px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {TABS.map((t) => (
               <button
                 key={t}
                 onClick={() => setTab(t)}
-                className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                className={`shrink-0 whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
                   tab === t
                     ? 'bg-emerald-600 text-white'
                     : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
@@ -111,7 +112,8 @@ function App() {
             {tab === 'Today' && (
               <Today matches={matches} groupMap={groupMap} groups={groups} news={news} />
             )}
-            {tab === 'Groups' && <Groups groups={groups} />}
+            {tab === 'Groups' && <Groups groups={groups} matches={matches} />}
+            {tab === 'Golden Boot' && <GoldenBoot matches={matches} />}
             {tab === 'Bracket' && <Bracket matches={matches} />}
             {tab === 'Schedule' && (
               <Schedule matches={matches} groupMap={groupMap} groups={groups} />
