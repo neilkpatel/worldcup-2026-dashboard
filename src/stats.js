@@ -66,3 +66,30 @@ export function buildThirdPlaceRace(groups) {
   thirds.sort((a, b) => b.points - a.points || b.gd - a.gd || b.gf - a.gf)
   return thirds.map((t, i) => ({ ...t, position: i + 1, qualifying: i < 8 }))
 }
+
+// Ordinal suffix: 1 -> "1st", 2 -> "2nd", 23 -> "23rd". Shared across the UI.
+export const ordinal = (n) =>
+  `${n}${['th', 'st', 'nd', 'rd'][(n % 100 >> 3 ^ 1) && n % 10] || 'th'}`
+
+// Map team id -> its current group standing, so fixtures and results can show
+// "how a team is doing" (position + points) without re-deriving it from matches.
+export function buildStandingMap(groups) {
+  const map = {}
+  for (const g of groups) {
+    const group = g.name.replace('Group ', '')
+    for (const t of g.teams) {
+      map[t.id] = {
+        group,
+        rank: t.rank,
+        points: t.points,
+        played: t.played,
+        wins: t.wins,
+        draws: t.draws,
+        losses: t.losses,
+        gd: t.gd,
+        gf: t.gf,
+      }
+    }
+  }
+  return map
+}

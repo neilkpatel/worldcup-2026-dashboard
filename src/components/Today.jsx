@@ -1,9 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import ResultCard from './ResultCard'
 import Explainer from './Explainer'
 import { lastCompletedDay } from '../recap'
 import { fetchMatchSummary } from '../api'
 import { matchStakes, MARQUEE } from '../stakes'
+import { buildStandingMap, ordinal } from '../stats'
+import TeamStanding from './TeamStanding'
 import reports from '../data/reports.json'
 
 // Lazily fetch per-match recap detail (scorers, stats, headline) for a set of
@@ -156,7 +158,7 @@ function StatusPill({ m }) {
   )
 }
 
-function FixtureSide({ team, state, winner }) {
+function FixtureSide({ team, state, winner, standing }) {
   const dim = state === 'post' && !winner
   return (
     <div className="flex flex-1 flex-col items-center gap-1.5">
@@ -173,17 +175,19 @@ function FixtureSide({ team, state, winner }) {
       >
         {team.shortName || team.name}
       </span>
+      {standing && <TeamStanding s={standing} />}
     </div>
   )
 }
 
 // A lively, clickable fixture card: hover lift, live pulse, kickoff countdown,
 // and a tap to reveal venue / TV / what's at stake.
-function FixtureCard({ m, group, stakes }) {
+function FixtureCard({ m, group, stakes, standingMap }) {
   const [open, setOpen] = useState(false)
   const pre = m.state === 'pre'
   const upset = upsetKind(m)
   const hasDetail = m.venue || m.tv || stakes
+  const showStanding = m.round === 'group-stage'
 
   return (
     <div
@@ -200,7 +204,7 @@ function FixtureCard({ m, group, stakes }) {
       </div>
 
       <div className="flex items-center gap-1">
-        <FixtureSide team={m.home} state={m.state} winner={m.home.winner} />
+        <FixtureSide team={m.home} state={m.state} winner={m.home.winner} standing={showStanding ? standingMap?.[m.home.id] : null} />
         <div className="shrink-0 px-2 text-center">
           {pre ? (
             <div className="text-sm font-semibold text-slate-500">v</div>
@@ -212,7 +216,7 @@ function FixtureCard({ m, group, stakes }) {
             </div>
           )}
         </div>
-        <FixtureSide team={m.away} state={m.state} winner={m.away.winner} />
+        <FixtureSide team={m.away} state={m.state} winner={m.away.winner} standing={showStanding ? standingMap?.[m.away.id] : null} />
       </div>
 
       {pre && (
@@ -239,7 +243,7 @@ function FixtureCard({ m, group, stakes }) {
 const STATE_RANK = { in: 0, pre: 1, post: 2 }
 const byWatchOrder = (a, b) => STATE_RANK[a.state] - STATE_RANK[b.state] || a.date - b.date
 
-function Scores({ title, matches, groupMap, groups }) {
+function Scores({ title, matches, groupMap, groups, standingMap }) {
   if (matches.length === 0) return null
   const ordered = [...matches].sort(byWatchOrder)
   return (
@@ -249,14 +253,12 @@ function Scores({ title, matches, groupMap, groups }) {
       </h2>
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {ordered.map((m) => (
-          <FixtureCard key={m.id} m={m} group={groupMap[m.home.id]} stakes={matchStakes(m, groups)} />
+          <FixtureCard key={m.id} m={m} group={groupMap[m.home.id]} stakes={matchStakes(m, groups)} standingMap={standingMap} />
         ))}
       </div>
     </section>
   )
 }
-
-const ordinal = (n) => `${n}${['th', 'st', 'nd', 'rd'][(n % 100 >> 3 ^ 1) && n % 10] || 'th'}`
 
 // Pinned panel for a team the user follows — its group standing plus its live /
 // next / last fixture, surfaced at the very top of the Today tab.
@@ -339,7 +341,7 @@ function FollowedTeam({ abbrev, matches, groups }) {
   )
 }
 
-function LatestResults({ matches }) {
+function LatestResults({ matches, standingMap }) {
   const summaries = useMatchSummaries(matches)
   if (matches.length === 0) return null
   return (
@@ -355,6 +357,7 @@ function LatestResults({ matches }) {
             summary={summaries[m.id]}
             loading={!(m.id in summaries)}
             cachedReport={reports[m.id]}
+            standingMap={standingMap}
           />
         ))}
       </div>
@@ -363,6 +366,7 @@ function LatestResults({ matches }) {
 }
 
 export default function Today({ matches, groupMap, groups, news = [] }) {
+  const standingMap = useMemo(() => buildStandingMap(groups), [groups])
   const now = new Date()
   const todayKey = dayKey(now)
 
@@ -406,6 +410,7 @@ export default function Today({ matches, groupMap, groups, news = [] }) {
           matches={todayMatches}
           groupMap={groupMap}
           groups={groups}
+          standingMap={standingMap}
         />
       ) : nextDayMatches.length > 0 ? (
         <Scores
@@ -413,6 +418,7 @@ export default function Today({ matches, groupMap, groups, news = [] }) {
           matches={nextDayMatches}
           groupMap={groupMap}
           groups={groups}
+          standingMap={standingMap}
         />
       ) : null}
 
@@ -423,7 +429,7 @@ export default function Today({ matches, groupMap, groups, news = [] }) {
       )}
 
       {/* ── Latest results ── */}
-      <LatestResults matches={recapMatches} />
+      <LatestResults matches={recapMatches} standingMap={standingMap} />
 
       {/* ── News last ── */}
       <News previews={previews} headlines={headlineItems} />

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { templateReport, matchTags } from '../reports'
+import TeamStanding from './TeamStanding'
 
 const TAG_STYLE = {
   Upset: 'bg-amber-500/20 text-amber-300',
@@ -47,7 +48,7 @@ function EventList({ events, align }) {
 }
 
 // Flag + name, matching the Today fixture cards' look. Winner emphasized.
-function Side({ team, winner }) {
+function Side({ team, winner, standing }) {
   return (
     <div className="flex flex-1 flex-col items-center gap-1.5">
       {team.logo && (
@@ -56,6 +57,7 @@ function Side({ team, winner }) {
       <span className={`text-center text-xs leading-tight ${winner ? 'font-bold text-slate-100' : 'text-slate-400'}`}>
         {team.shortName || team.name}
       </span>
+      {standing && <TeamStanding s={standing} />}
     </div>
   )
 }
@@ -81,8 +83,9 @@ function StatBar({ label, home, away }) {
   )
 }
 
-export default function ResultCard({ match: m, summary, loading, cachedReport }) {
+export default function ResultCard({ match: m, summary, loading, cachedReport, standingMap = {} }) {
   const [panel, setPanel] = useState(null) // 'report' | 'stats' | null
+  const showStanding = m.round === 'group-stage'
   const toggle = (p) => setPanel((cur) => (cur === p ? null : p))
 
   const homeEvents = (summary?.events ?? []).filter((e) => e.teamId === m.home.id)
@@ -104,13 +107,13 @@ export default function ResultCard({ match: m, summary, loading, cachedReport })
     <div className="rounded-lg border border-slate-800 bg-slate-900/40">
       {/* Scoreline — flag-forward, matching the Today fixture cards */}
       <div className="flex items-center gap-1 px-3 pt-3">
-        <Side team={m.home} winner={m.home.winner} />
+        <Side team={m.home} winner={m.home.winner} standing={showStanding ? standingMap[m.home.id] : null} />
         <div className="shrink-0 px-2 text-2xl font-bold tabular-nums text-slate-100">
           {m.home.score}
           <span className="mx-1 text-slate-600">–</span>
           {m.away.score}
         </div>
-        <Side team={m.away} winner={m.away.winner} />
+        <Side team={m.away} winner={m.away.winner} standing={showStanding ? standingMap[m.away.id] : null} />
       </div>
 
       {/* Storyline tags */}
