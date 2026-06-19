@@ -1,13 +1,16 @@
-import { useEffect, useMemo, useState } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import { fetchSchedule, fetchStandings, fetchNews, buildGroupMap } from './api'
 import Today from './components/Today'
 import Groups from './components/Groups'
 import GoldenBoot from './components/GoldenBoot'
 import Bracket from './components/Bracket'
 import Schedule from './components/Schedule'
-import MyTickets from './components/MyTickets'
+// "My Tickets" is personal (which matches Neil is attending) — only load it in local
+// dev, so it's excluded from the deployed/public bundle entirely (import is tree-shaken
+// out when import.meta.env.DEV is false).
+const MyTickets = import.meta.env.DEV ? lazy(() => import('./components/MyTickets')) : null
 
-const TABS = ['Today', 'Groups', 'Golden Boot', 'Bracket', 'Schedule', 'My Tickets']
+const TABS = ['Today', 'Groups', 'Golden Boot', 'Bracket', 'Schedule', ...(MyTickets ? ['My Tickets'] : [])]
 const REFRESH_MS = 60_000
 
 // The IANA zone + short label of the viewer's machine — every kickoff time on the
@@ -118,7 +121,11 @@ function App() {
             {tab === 'Schedule' && (
               <Schedule matches={matches} groupMap={groupMap} groups={groups} />
             )}
-            {tab === 'My Tickets' && <MyTickets groups={groups} />}
+            {MyTickets && tab === 'My Tickets' && (
+              <Suspense fallback={null}>
+                <MyTickets groups={groups} />
+              </Suspense>
+            )}
           </>
         )}
       </main>
