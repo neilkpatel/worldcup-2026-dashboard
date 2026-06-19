@@ -50,7 +50,7 @@ function EventList({ events, align }) {
 // Flag + name, matching the Today fixture cards' look. Winner emphasized.
 function Side({ team, winner, standing }) {
   return (
-    <div className="flex flex-1 flex-col items-center gap-1.5">
+    <div className="flex min-w-0 flex-1 flex-col items-center gap-1.5">
       {team.logo && (
         <img src={team.logo} alt="" loading="lazy" className={`h-9 w-9 object-contain ${winner ? '' : 'opacity-60'}`} />
       )}

@@ -25,7 +25,7 @@ function Form({ results }) {
 
 function GroupCard({ group, formMap }) {
   return (
-    <div className="rounded-xl border border-slate-800 bg-slate-900 p-4">
+    <div className="rounded-xl border border-slate-800 bg-slate-900 p-3 sm:p-4">
       <h3 className="mb-3 font-semibold">{group.name}</h3>
       <table className="w-full text-sm">
         <thead>
@@ -124,7 +124,7 @@ export default function Groups({ groups, matches = [] }) {
         <span className="text-emerald-400">▎</span>Top 2 advance to round of 32 ·{' '}
         <span className="text-amber-400">▎</span>3rd place — best 8 of 12 also advance
       </p>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
         {groups.map((group) => (
           <GroupCard key={group.name} group={group} formMap={formMap} />
         ))}

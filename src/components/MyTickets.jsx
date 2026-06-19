@@ -121,7 +121,7 @@ function DreamMatchups({ groups }) {
         Live read on whether a blockbuster is firming up — each leg checks if the
         team currently sits in the slot the bracket needs.
       </p>
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         {DREAMS.map((dream) => {
           const legs = dream.legs.map((leg) => ({ leg, st: legStatus(groups, leg) }))
           const bothOn = legs.every(({ st }) => st && st.onTrack)
@@ -221,7 +221,7 @@ function TicketCard({ ticket, groups }) {
         </div>
       </div>
 
-      <div className="grid gap-4 px-4 py-4 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 px-4 py-4 sm:grid-cols-2">
         {ticket.sides.map((side, i) => (
           <div key={side.label}>
             <div className="mb-2 text-sm font-semibold text-slate-300">

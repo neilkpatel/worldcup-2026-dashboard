@@ -161,7 +161,7 @@ function StatusPill({ m }) {
 function FixtureSide({ team, state, winner, standing }) {
   const dim = state === 'post' && !winner
   return (
-    <div className="flex flex-1 flex-col items-center gap-1.5">
+    <div className="flex min-w-0 flex-1 flex-col items-center gap-1.5">
       <img
         src={team.logo}
         alt=""
@@ -251,7 +251,7 @@ function Scores({ title, matches, groupMap, groups, standingMap }) {
       <h2 className="mb-3 text-sm font-semibold tracking-wide text-slate-400 uppercase">
         {title}
       </h2>
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {ordered.map((m) => (
           <FixtureCard key={m.id} m={m} group={groupMap[m.home.id]} stakes={matchStakes(m, groups)} standingMap={standingMap} />
         ))}
@@ -349,7 +349,7 @@ function LatestResults({ matches, standingMap }) {
       <h2 className="mb-3 text-sm font-semibold tracking-wide text-slate-400 uppercase">
         ⚽ Latest results · {dateLabel(matches[0].date)}
       </h2>
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         {matches.map((m) => (
           <ResultCard
             key={m.id}
