@@ -1,7 +1,22 @@
 # World Cup 2026 Dashboard
 
-Local-only dashboard for tracking the 2026 FIFA World Cup (June 11 – July 19, 2026).
-Not deployed anywhere — runs at http://localhost:5173 via `npm run dev`.
+Dashboard for tracking the 2026 FIFA World Cup (June 11 – July 19, 2026).
+Runs locally at http://localhost:5173 via `npm run dev`.
+
+## Deployment
+- **Live:** https://worldcup.neilkpatel.com (custom subdomain) +
+  https://worldcup-2026-dashboard-nine.vercel.app (Vercel default)
+- Hosted on Vercel project `worldcup-2026-dashboard`
+  (team `neilkpatel-gmailcoms-projects`); **auto-deploys on every push** to the
+  `neilkpatel/worldcup-2026-dashboard` GitHub repo. No manual `vercel` deploy needed.
+- DNS for the subdomain: Dreamhost (neilkpatel.com NS) → `A worldcup → 76.76.21.21`.
+
+## Social share card (og:image)
+- `scripts/generate-og.py` (Pillow) renders `public/og.png` (1200×630,
+  "World Cup 2026 — by Neil"). Re-run: `python3 scripts/generate-og.py`.
+- `index.html` carries the Open Graph + Twitter meta tags; `og:image` is the
+  absolute `https://worldcup.neilkpatel.com/og.png`. Vite copies `public/og.png`
+  to the deploy root even under `viteSingleFile`.
 
 ## Stack
 - Vite + React 19 + Tailwind v4 (`@tailwindcss/vite` plugin)
