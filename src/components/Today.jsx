@@ -45,6 +45,10 @@ function dateLabel(date) {
   return date.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' })
 }
 
+function timeLabel(date) {
+  return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+}
+
 function timeAgo(date) {
   if (!date) return ''
   const mins = Math.round((Date.now() - date.getTime()) / 60000)
@@ -287,10 +291,12 @@ function FollowedTeam({ abbrev, matches, groups }) {
     const s = selfOf(m)
     const o = oppOf(m)
     if (kind === 'next') {
+      const where = [m.venue, m.city].filter(Boolean).join(', ')
       return (
         <span>
-          <span className="text-slate-500">Next</span> · vs {o.name} · {dateLabel(m.date)}{' '}
+          <span className="text-slate-500">Next</span> · vs {o.name} · {dateLabel(m.date)} · {timeLabel(m.date)}{' '}
           <span className="text-emerald-400">({kickoffCountdown(m.date)})</span>
+          {where && <span className="mt-0.5 block text-xs text-slate-500">📍 {where}</span>}
         </span>
       )
     }

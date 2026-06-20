@@ -64,9 +64,39 @@ const TICKETS = [
   },
 ]
 
+// Marquee Round-of-16 scenarios for my NYC match (Match 91, MetLife). One side is
+// fed by 1C or 2F, the other by 2E or 2I — each leg names a team and the slot the
+// bracket needs it to finish in to land at MetLife.
+const NYC_DREAMS = [
+  {
+    name: 'Brazil vs France',
+    blurb: 'Two favorites colliding in the last 16 — a final that arrived early.',
+    legs: [
+      { team: 'Brazil', letter: 'C', pos: 1, route: 'win Group C' },
+      { team: 'France', letter: 'I', pos: 2, route: 'runner-up in Group I' },
+    ],
+  },
+  {
+    name: 'Japan vs France',
+    blurb: "Japan's pressing machine against Les Bleus — a tactical feast.",
+    legs: [
+      { team: 'Japan', letter: 'F', pos: 2, route: 'runner-up in Group F' },
+      { team: 'France', letter: 'I', pos: 2, route: 'runner-up in Group I' },
+    ],
+  },
+  {
+    name: 'Brazil vs Germany',
+    blurb: 'Seleção against the four-time champions under the MetLife lights.',
+    legs: [
+      { team: 'Brazil', letter: 'C', pos: 1, route: 'win Group C' },
+      { team: 'Germany', letter: 'E', pos: 2, route: 'runner-up in Group E' },
+    ],
+  },
+]
+
 // Marquee quarterfinal scenarios worth watching at Hard Rock. Each leg names the
 // team and the finishing slot the bracket requires for it to reach Match 99.
-const DREAMS = [
+const MIAMI_DREAMS = [
   {
     name: 'Brazil vs Argentina',
     blurb: 'Superclásico in a quarterfinal — Miami goes nuclear.',
@@ -111,18 +141,18 @@ function legStatus(groups, leg) {
   return { rank, onTrack: rank === leg.pos, played: team.played }
 }
 
-function DreamMatchups({ groups }) {
+function DreamMatchups({ groups, title, dreams }) {
   return (
     <section className="mb-8">
       <h2 className="mb-1 text-sm font-semibold tracking-wide text-amber-300/90 uppercase">
-        🔮 Dream QF matchups · Miami
+        🔮 {title}
       </h2>
       <p className="mb-3 text-xs text-slate-500">
         Live read on whether a blockbuster is firming up — each leg checks if the
         team currently sits in the slot the bracket needs.
       </p>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        {DREAMS.map((dream) => {
+        {dreams.map((dream) => {
           const legs = dream.legs.map((leg) => ({ leg, st: legStatus(groups, leg) }))
           const bothOn = legs.every(({ st }) => st && st.onTrack)
           return (
@@ -259,7 +289,8 @@ export default function MyTickets({ groups }) {
         <TicketCard key={ticket.id} ticket={ticket} groups={groups} />
       ))}
 
-      <DreamMatchups groups={groups} />
+      <DreamMatchups groups={groups} title="Dream R16 matchups · NYC" dreams={NYC_DREAMS} />
+      <DreamMatchups groups={groups} title="Dream QF matchups · Miami" dreams={MIAMI_DREAMS} />
 
       <p className="rounded-lg border border-slate-800 bg-slate-900/40 px-4 py-3 text-xs text-slate-500">
         ⚠️ The <span className="text-slate-400">slots</span> are fixed; which teams

@@ -5,10 +5,9 @@ import Groups from './components/Groups'
 import GoldenBoot from './components/GoldenBoot'
 import Bracket from './components/Bracket'
 import Schedule from './components/Schedule'
-// "My Tickets" is personal (which matches Neil is attending) — only load it in local
-// dev, so it's excluded from the deployed/public bundle entirely (import is tree-shaken
-// out when import.meta.env.DEV is false).
-const MyTickets = import.meta.env.DEV ? lazy(() => import('./components/MyTickets')) : null
+// "My Tickets" shows which matches Neil is attending + dream-matchup scenarios.
+// Public on Neil's request (note: this exposes the venues/dates he'll be at).
+const MyTickets = lazy(() => import('./components/MyTickets'))
 
 const TABS = ['Today', 'Groups', 'Golden Boot', 'Bracket', 'Schedule', ...(MyTickets ? ['My Tickets'] : [])]
 const REFRESH_MS = 60_000
