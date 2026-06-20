@@ -165,12 +165,39 @@ export async function fetchMatchSummary(eventId) {
     }
   }
 
+  // Recent form (last 5) per team id + a head-to-head snapshot — comes back in the
+  // same summary call, so previews for upcoming fixtures need no extra request.
+  const form = {}
+  for (const block of d.lastFiveGames ?? []) {
+    const tid = block.team?.id
+    if (!tid) continue
+    form[tid] = (block.events ?? []).map((e) => ({
+      result: e.gameResult, // 'W' | 'D' | 'L'
+      score: e.score,
+      opponent: e.opponent?.abbreviation || e.opponent?.displayName || '',
+      date: e.gameDate ? new Date(e.gameDate) : null,
+    }))
+  }
+
+  let h2h = null
+  const h2hEvents = (d.headToHeadGames ?? [])[0]?.events ?? []
+  if (h2hEvents.length) {
+    const last = h2hEvents[0] // most recent meeting
+    h2h = {
+      count: h2hEvents.length,
+      lastScore: last.score,
+      lastYear: last.gameDate ? new Date(last.gameDate).getFullYear() : null,
+    }
+  }
+
   return {
     headline: d.article?.headline ?? null,
     story: htmlToText(d.article?.story), // ESPN's own written match report
     attendance: d.gameInfo?.attendance ?? null,
     events,
     stats,
+    form,
+    h2h,
   }
 }
 

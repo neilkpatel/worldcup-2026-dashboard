@@ -116,6 +116,13 @@ export default function ResultCard({ match: m, summary, loading, cachedReport, s
         <Side team={m.away} winner={m.away.winner} standing={showStanding ? standingMap[m.away.id] : null} />
       </div>
 
+      {/* Where it was played */}
+      {(m.venue || m.city) && (
+        <p className="px-4 pt-2 text-center text-[11px] text-slate-500">
+          📍 {[m.venue, m.city].filter(Boolean).join(', ')}
+        </p>
+      )}
+
       {/* Storyline tags */}
       {tags.length > 0 && (
         <div className="flex flex-wrap justify-center gap-1.5 px-4 pt-2.5">

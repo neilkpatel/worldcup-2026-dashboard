@@ -184,21 +184,52 @@ function FixtureSide({ team, state, winner, standing }) {
   )
 }
 
-// A lively, clickable fixture card: hover lift, live pulse, kickoff countdown,
-// and a tap to reveal venue / TV / what's at stake.
-function FixtureCard({ m, group, stakes, standingMap }) {
-  const [open, setOpen] = useState(false)
+// Colored W/D/L chips for a team's recent results, shown oldest → newest.
+function FormChips({ label, games }) {
+  if (!games || games.length === 0) return null
+  return (
+    <div className="flex items-center gap-1">
+      <span className="w-9 shrink-0 font-semibold text-slate-400">{label}</span>
+      {games
+        .slice(0, 5)
+        .reverse()
+        .map((g, i) => (
+          <span
+            key={i}
+            title={`${g.result} ${g.score}${g.opponent ? ` v ${g.opponent}` : ''}`}
+            className={`inline-flex h-4 w-4 items-center justify-center rounded text-[9px] font-bold ${
+              g.result === 'W'
+                ? 'bg-emerald-500/20 text-emerald-400'
+                : g.result === 'L'
+                  ? 'bg-rose-500/20 text-rose-400'
+                  : 'bg-slate-600/40 text-slate-300'
+            }`}
+          >
+            {g.result}
+          </span>
+        ))}
+    </div>
+  )
+}
+
+// Fixture card with an always-visible preview: venue, TV and what's at stake, plus
+// (for upcoming games) recent form + head-to-head from the match summary.
+function FixtureCard({ m, group, stakes, standingMap, summary }) {
   const pre = m.state === 'pre'
   const upset = upsetKind(m)
-  const hasDetail = m.venue || m.tv || stakes
   const showStanding = m.round === 'group-stage'
+  const where = [m.venue, m.city].filter(Boolean).join(', ')
+  const form = summary?.form
+  const h2h = summary?.h2h
+  const showStake = stakes && m.state !== 'post'
+  const hasForm = pre && form && (form[m.home.id] || form[m.away.id])
+  const hasPreview = where || m.tv || showStake || hasForm || (pre && h2h)
 
   return (
     <div
-      onClick={() => hasDetail && setOpen((o) => !o)}
       className={`group flex flex-col rounded-xl border bg-slate-900/40 p-3 transition duration-150 hover:-translate-y-0.5 hover:bg-slate-900 hover:shadow-lg hover:shadow-black/30 ${
-        hasDetail ? 'cursor-pointer' : ''
-      } ${upset ? 'border-amber-500/40' : 'border-slate-800 hover:border-emerald-600/50'}`}
+        upset ? 'border-amber-500/40' : 'border-slate-800 hover:border-emerald-600/50'
+      }`}
     >
       <div className="mb-2 flex items-center justify-between">
         <span className="rounded bg-slate-800 px-1.5 py-0.5 text-[10px] font-medium text-slate-400">
@@ -232,11 +263,24 @@ function FixtureCard({ m, group, stakes, standingMap }) {
         <div className="mt-2 text-center text-[11px] font-semibold text-amber-400">⚡ {upset.text}</div>
       )}
 
-      {open && hasDetail && (
+      {hasPreview && (
         <div className="mt-2 space-y-1 border-t border-slate-800 pt-2 text-[11px] text-slate-400">
-          {m.venue && <div>📍 {m.venue}{m.city ? `, ${m.city}` : ''}</div>}
+          {where && <div>📍 {where}</div>}
           {m.tv && <div>📺 {m.tv}</div>}
-          {stakes && <div className="text-slate-300">🎯 {stakes.text}</div>}
+          {showStake && <div className="text-slate-300">🎯 {stakes.text}</div>}
+          {hasForm && (
+            <div className="space-y-0.5 pt-0.5">
+              <div className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Recent form</div>
+              <FormChips label={m.home.abbrev} games={form[m.home.id]} />
+              <FormChips label={m.away.abbrev} games={form[m.away.id]} />
+            </div>
+          )}
+          {pre && h2h && (
+            <div>
+              🤝 {h2h.count === 1 ? 'Last meeting' : `Last of ${h2h.count} meetings`}: {h2h.lastScore}
+              {h2h.lastYear ? ` (${h2h.lastYear})` : ''}
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -248,6 +292,9 @@ const STATE_RANK = { in: 0, pre: 1, post: 2 }
 const byWatchOrder = (a, b) => STATE_RANK[a.state] - STATE_RANK[b.state] || a.date - b.date
 
 function Scores({ title, matches, groupMap, groups, standingMap }) {
+  // Pull summaries for upcoming games so each card can show form + head-to-head
+  // (keyed by match-id set, so it only refetches when the slate changes).
+  const summaries = useMatchSummaries(matches.filter((m) => m.state === 'pre'))
   if (matches.length === 0) return null
   const ordered = [...matches].sort(byWatchOrder)
   return (
@@ -257,7 +304,7 @@ function Scores({ title, matches, groupMap, groups, standingMap }) {
       </h2>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {ordered.map((m) => (
-          <FixtureCard key={m.id} m={m} group={groupMap[m.home.id]} stakes={matchStakes(m, groups)} standingMap={standingMap} />
+          <FixtureCard key={m.id} m={m} group={groupMap[m.home.id]} stakes={matchStakes(m, groups)} standingMap={standingMap} summary={summaries[m.id]} />
         ))}
       </div>
     </section>
