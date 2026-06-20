@@ -9,7 +9,7 @@ import Schedule from './components/Schedule'
 // Public on Neil's request (note: this exposes the venues/dates he'll be at).
 const MyTickets = lazy(() => import('./components/MyTickets'))
 
-const TABS = ['Today', 'Groups', 'Golden Boot', 'Bracket', 'Schedule', ...(MyTickets ? ['My Tickets'] : [])]
+const TABS = ['Today', 'Groups', 'Golden Boot', 'Bracket', 'Schedule', ...(MyTickets ? ["Neil's Tickets"] : [])]
 const REFRESH_MS = 60_000
 
 // The IANA zone + short label of the viewer's machine — every kickoff time on the
@@ -120,7 +120,7 @@ function App() {
             {tab === 'Schedule' && (
               <Schedule matches={matches} groupMap={groupMap} groups={groups} />
             )}
-            {MyTickets && tab === 'My Tickets' && (
+            {MyTickets && tab === "Neil's Tickets" && (
               <Suspense fallback={null}>
                 <MyTickets groups={groups} />
               </Suspense>
