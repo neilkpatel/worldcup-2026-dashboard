@@ -76,11 +76,14 @@ Runs locally at http://localhost:5173 via `npm run dev`.
 - Re-runnable + incremental: appends a history point each run so the UI draws a
   price-over-time sparkline + a ▲/▼ get-in trend vs the last check.
 - `MyTickets.jsx` imports `prices.json` and renders `PriceBand` (live get-in / range /
-  sparkline / "checked Xm ago" / TickPick + SeatGeek links) per card. Hidden until the cache
-  is populated, so the public site never shows an empty rail.
-- **Refresh model:** the site bundles `prices.json` at build time, so a refresh = re-run
-  `npm run prices` then push (Vercel rebuilds). Fully unattended/cron-able since there's no
-  key or browser dependency.
+  ▲▼ trend / "checked Xm ago" / TickPick + SeatGeek links) + `PriceChart` (get-in-over-time
+  line chart from `history[]`) per card. Hidden until the cache is populated, so the public
+  site never shows an empty rail.
+- **Auto-refresh:** `.github/workflows/refresh-prices.yml` runs `npm run prices` every 6h
+  (cron) — and on demand via the Actions "Run workflow" button — then commits `prices.json`
+  *only if it changed* and pushes, which triggers a Vercel rebuild. Runs entirely on GitHub
+  (no key/browser/local machine). Each run appends a `history` point, so the `PriceChart`
+  time series builds itself. Tune cadence by editing the `cron:` line.
 
 ## Tournament format (48 teams, new in 2026)
 - 12 groups of 4; top 2 per group + 8 best third-place teams → round of 32

@@ -1,0 +1,45 @@
+name: Refresh ticket prices
+
+# Regenerates src/data/prices.json from TickPick and pushes it, which triggers a
+# Vercel rebuild so worldcup.neilkpatel.com shows current get-in prices. The price
+# script needs no API key or browser (plain fetch + Node built-ins), so this runs
+# entirely on GitHub's infra — no dependency on Neil's machine being on.
+
+on:
+  schedule:
+    - cron: '0 */6 * * *' # every 6 hours (UTC)
+  workflow_dispatch: {} # manual "Run workflow" button in the Actions tab
+
+# Let the default GITHUB_TOKEN push the updated prices.json back to the repo.
+permissions:
+  contents: write
+
+# If a run is already in progress, let it finish rather than overlapping.
+concurrency:
+  group: refresh-prices
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Fetch latest prices
+        run: node scripts/fetch-prices.mjs
+
+      - name: Commit & push if prices changed
+        run: |
+          if git diff --quiet -- src/data/prices.json; then
+            echo "No price change — nothing to commit."
+            exit 0
+          fi
+          git config user.name "Neil Patel"
+          git config user.email "neilkpatel@gmail.com"
+          git add src/data/prices.json
+          git commit -m "Auto-refresh ticket prices ($(date -u '+%Y-%m-%d %H:%M UTC'))"
+          git push

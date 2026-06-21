@@ -250,26 +250,61 @@ function relTime(iso) {
   return `${Math.round(hrs / 24)}d ago`
 }
 
-// Tiny inline sparkline of the get-in price over the recorded history.
-function Sparkline({ points }) {
-  const vals = points.map((p) => p.low).filter((v) => v != null)
-  if (vals.length < 2) return null
-  const w = 88
-  const h = 22
-  const min = Math.min(...vals)
-  const span = Math.max(...vals) - min || 1
-  const d = vals
-    .map((v, i) => {
-      const x = (i / (vals.length - 1)) * w
-      const y = h - ((v - min) / span) * h
-      return `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`
-    })
-    .join(' ')
-  const up = vals[vals.length - 1] >= vals[0]
+// Get-in price over time, drawn from the history points the refresh job appends
+// every ~6h. Renders a "building" note until there are at least 2 data points.
+function PriceChart({ history }) {
+  if (!history?.length) return null
+  const pts = history.filter((p) => p.low != null)
+  if (pts.length < 2) {
+    return (
+      <div className="border-b border-slate-800 bg-slate-900/40 px-4 py-3 text-xs text-slate-600">
+        📈 Price history builds as the tracker refreshes (every ~6h).
+      </div>
+    )
+  }
+  const W = 640
+  const H = 140
+  const padL = 48
+  const padR = 14
+  const padT = 14
+  const padB = 24
+  const lows = pts.map((p) => p.low)
+  const min = Math.min(...lows)
+  const max = Math.max(...lows)
+  const span = max - min || 1
+  const t0 = new Date(pts[0].t).getTime()
+  const tSpan = new Date(pts[pts.length - 1].t).getTime() - t0 || 1
+  const px = (p) => padL + ((new Date(p.t).getTime() - t0) / tSpan) * (W - padL - padR)
+  const py = (v) => padT + (1 - (v - min) / span) * (H - padT - padB)
+  const line = pts.map((p, i) => `${i ? 'L' : 'M'}${px(p).toFixed(1)},${py(p.low).toFixed(1)}`).join(' ')
+  const area = `${line} L${px(pts[pts.length - 1]).toFixed(1)},${H - padB} L${px(pts[0]).toFixed(1)},${H - padB} Z`
+  const last = pts[pts.length - 1]
+  const fmtDate = (t) => new Date(t).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  const up = last.low >= pts[0].low
+  const stroke = up ? '#34d399' : '#fb7185'
   return (
-    <svg width={w} height={h} className="shrink-0">
-      <path d={d} fill="none" stroke={up ? '#34d399' : '#fb7185'} strokeWidth="1.5" strokeLinejoin="round" />
-    </svg>
+    <div className="border-b border-slate-800 bg-slate-900/40 px-4 py-3">
+      <div className="mb-1 text-xs font-medium tracking-wide text-slate-500 uppercase">Get-in price history</div>
+      <svg viewBox={`0 0 ${W} ${H}`} className="w-full" role="img" aria-label="Get-in price over time">
+        {[max, (max + min) / 2, min].map((v, i) => (
+          <g key={i}>
+            <line x1={padL} y1={py(v)} x2={W - padR} y2={py(v)} stroke="#1e293b" strokeWidth="1" />
+            <text x={padL - 6} y={py(v) + 4} textAnchor="end" fontSize="11" fill="#64748b">
+              {fmtUSD(v)}
+            </text>
+          </g>
+        ))}
+        <text x={padL} y={H - 7} textAnchor="start" fontSize="11" fill="#64748b">
+          {fmtDate(pts[0].t)}
+        </text>
+        <text x={W - padR} y={H - 7} textAnchor="end" fontSize="11" fill="#64748b">
+          {fmtDate(last.t)}
+        </text>
+        <path d={area} fill={stroke} fillOpacity="0.12" />
+        <path d={line} fill="none" stroke={stroke} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
+        <circle cx={px(last)} cy={py(last.low)} r="3.5" fill={stroke} />
+      </svg>
+    </div>
   )
 }
 
@@ -291,7 +326,6 @@ function PriceBand({ price }) {
         </span>
       )}
       {price.high != null && <span className="text-slate-500">up to {fmtUSD(price.high)}</span>}
-      <Sparkline points={hist} />
       <span className="ml-auto text-xs text-slate-600">
         {price.checkedAt && `checked ${relTime(price.checkedAt)}`}
         {price.url && (
@@ -331,6 +365,7 @@ function TicketCard({ ticket, groups, price }) {
       </div>
 
       <PriceBand price={price} />
+      <PriceChart history={price?.history} />
 
       <div className="grid grid-cols-1 gap-4 px-4 py-4 sm:grid-cols-2">
         {ticket.sides.map((side, i) => (
