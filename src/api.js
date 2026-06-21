@@ -109,6 +109,22 @@ export async function fetchNews() {
     .filter((a) => a.headline && a.link)
 }
 
+// Team-specific ESPN headlines (e.g. USMNT or Iran) for a followed-team box.
+// Same best-effort contract as fetchNews — failures surface as "no headlines".
+export async function fetchTeamNews(teamId, limit = 6) {
+  const res = await fetch(`${NEWS}?team=${teamId}&limit=${limit}`)
+  if (!res.ok) throw new Error(`team news request failed: ${res.status}`)
+  const data = await res.json()
+  return (data.articles ?? [])
+    .map((a) => ({
+      id: a.id,
+      headline: a.headline,
+      published: a.published ? new Date(a.published) : null,
+      link: a.links?.web?.href ?? null,
+    }))
+    .filter((a) => a.headline && a.link)
+}
+
 // Turn ESPN's HTML article body into clean paragraph text (blank-line separated).
 function htmlToText(html) {
   if (!html) return ''

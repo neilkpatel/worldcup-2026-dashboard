@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import ResultCard from './ResultCard'
 import Explainer from './Explainer'
 import { lastCompletedDay } from '../recap'
-import { fetchMatchSummary } from '../api'
+import { fetchMatchSummary, fetchTeamNews } from '../api'
 import { matchStakes, MARQUEE } from '../stakes'
 import { buildStandingMap, ordinal } from '../stats'
 import TeamStanding from './TeamStanding'
@@ -314,6 +314,7 @@ function Scores({ title, matches, groupMap, groups, standingMap }) {
 // Pinned panel for a team the user follows — its group standing plus its live /
 // next / last fixture, surfaced at the very top of the Today tab.
 function FollowedTeam({ abbrev, matches, groups }) {
+  const [news, setNews] = useState([])
   let standing = null
   let groupLetter = null
   for (const g of groups) {
@@ -325,10 +326,25 @@ function FollowedTeam({ abbrev, matches, groups }) {
     }
   }
   const mine = matches.filter((m) => m.home.abbrev === abbrev || m.away.abbrev === abbrev)
-  if (mine.length === 0) return null
   const selfOf = (m) => (m.home.abbrev === abbrev ? m.home : m.away)
   const oppOf = (m) => (m.home.abbrev === abbrev ? m.away : m.home)
-  const me = selfOf(mine.find((m) => selfOf(m).logo) ?? mine[0])
+  const me = mine.length ? selfOf(mine.find((m) => selfOf(m).logo) ?? mine[0]) : null
+  const teamId = me?.id ?? standing?.id ?? null
+
+  // Team-specific ESPN headlines for this box (USMNT, Iran, …). Best-effort —
+  // a failure just leaves the box without a headlines section.
+  useEffect(() => {
+    if (!teamId) return
+    let alive = true
+    fetchTeamNews(teamId)
+      .then((n) => alive && setNews(n))
+      .catch(() => {})
+    return () => {
+      alive = false
+    }
+  }, [teamId])
+
+  if (mine.length === 0) return null
 
   const live = mine.find((m) => m.state === 'in')
   const next = mine.filter((m) => m.state === 'pre').sort((a, b) => a.date - b.date)[0]
@@ -389,6 +405,27 @@ function FollowedTeam({ abbrev, matches, groups }) {
           {next && <div>{renderFixture(next, 'next')}</div>}
           {last && <div>{renderFixture(last, 'last')}</div>}
         </div>
+        {news.length > 0 && (
+          <div className="mt-3 border-t border-emerald-800/30 pt-3">
+            <div className="mb-1.5 text-[10px] font-semibold tracking-wide text-emerald-400/80 uppercase">
+              📰 {me.name} headlines
+            </div>
+            <ul className="space-y-1.5">
+              {news.slice(0, 4).map((a) => (
+                <li key={a.id}>
+                  <a
+                    href={a.link}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="block text-sm leading-snug text-sky-300/90 hover:text-sky-200 hover:underline"
+                  >
+                    {a.headline}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </div>
     </section>
   )
