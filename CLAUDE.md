@@ -58,6 +58,30 @@ Runs locally at http://localhost:5173 via `npm run dev`.
   needed), then a live template (`src/reports.js`). So analysis shows even with no key;
   running `npm run reports` upgrades it to tailored verdicts.
 
+## Live ticket prices (Neil's Tickets)
+- `npm run prices` (script: `scripts/fetch-prices.mjs`) fetches **live secondary-market
+  prices** for Neil's two matches and caches them in `src/data/prices.json`, keyed by the
+  ticket ids in `MyTickets.jsx` (`nyc-r16`, `miami-qf`). **No API key, no browser.**
+- **Why these sources** (we tried everything): SeatGeek/StubHub/Vivid list the matches but
+  gate prices behind **DataDome** (curl AND headless browsers get 403'd), Claude's Chrome
+  extension refuses ticket/commerce sites by policy, and SeatGeek's free dev API returns an
+  empty `stats` object for World Cup events. What *does* work: SEO-rendered aggregator pages.
+  - **TickPick** event page → embeds a schema.org `AggregateOffer` in plain HTML; we parse
+    `lowPrice` (get-in) + `highPrice` (top of range). All-in/no-fee, so honest numbers.
+  - Per-FIFA-category breakout (Cat 1–4, via GoalTickets' Shopify `.json`) was tried and
+    **removed**: those are broker "from"/teaser prices, not live get-ins, so they could sit
+    *below* the real get-in and read as contradictory. True per-section listings load via the
+    same DataDome-walled call and aren't scrapable — so we show only the trustworthy TickPick
+    live get-in + range.
+- Re-runnable + incremental: appends a history point each run so the UI draws a
+  price-over-time sparkline + a ▲/▼ get-in trend vs the last check.
+- `MyTickets.jsx` imports `prices.json` and renders `PriceBand` (live get-in / range /
+  sparkline / "checked Xm ago" / TickPick + SeatGeek links) per card. Hidden until the cache
+  is populated, so the public site never shows an empty rail.
+- **Refresh model:** the site bundles `prices.json` at build time, so a refresh = re-run
+  `npm run prices` then push (Vercel rebuilds). Fully unattended/cron-able since there's no
+  key or browser dependency.
+
 ## Tournament format (48 teams, new in 2026)
 - 12 groups of 4; top 2 per group + 8 best third-place teams → round of 32
 - Group stage June 11–27; final July 19 at MetLife Stadium

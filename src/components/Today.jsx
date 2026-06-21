@@ -453,8 +453,9 @@ export default function Today({ matches, groupMap, groups, news = [] }) {
 
   return (
     <div>
-      {/* ── Followed team, pinned ── */}
+      {/* ── Followed teams, pinned (USA, then Iran) ── */}
       <FollowedTeam abbrev="USA" matches={matches} groups={groups} />
+      <FollowedTeam abbrev="IRN" matches={matches} groups={groups} />
 
       {/* ── Today's fixtures (or the next slate on off-days) ── */}
       {todayMatches.length > 0 ? (

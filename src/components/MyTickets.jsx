@@ -1,3 +1,5 @@
+import pricesData from '../data/prices.json'
+
 // The two matches I have tickets to, defined by their fixed bracket slots.
 // The 2026 bracket is pre-drawn, so each match can only be reached by certain
 // group finishers. Standings are low-signal this early, so rather than naming
@@ -236,7 +238,84 @@ function Route({ groups, route }) {
   )
 }
 
-function TicketCard({ ticket, groups }) {
+const fmtUSD = (n) => (n == null ? '—' : `$${Math.round(n).toLocaleString('en-US')}`)
+
+function relTime(iso) {
+  if (!iso) return ''
+  const mins = Math.round((Date.now() - new Date(iso).getTime()) / 60000)
+  if (mins < 1) return 'just now'
+  if (mins < 60) return `${mins}m ago`
+  const hrs = Math.round(mins / 60)
+  if (hrs < 24) return `${hrs}h ago`
+  return `${Math.round(hrs / 24)}d ago`
+}
+
+// Tiny inline sparkline of the get-in price over the recorded history.
+function Sparkline({ points }) {
+  const vals = points.map((p) => p.low).filter((v) => v != null)
+  if (vals.length < 2) return null
+  const w = 88
+  const h = 22
+  const min = Math.min(...vals)
+  const span = Math.max(...vals) - min || 1
+  const d = vals
+    .map((v, i) => {
+      const x = (i / (vals.length - 1)) * w
+      const y = h - ((v - min) / span) * h
+      return `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`
+    })
+    .join(' ')
+  const up = vals[vals.length - 1] >= vals[0]
+  return (
+    <svg width={w} height={h} className="shrink-0">
+      <path d={d} fill="none" stroke={up ? '#34d399' : '#fb7185'} strokeWidth="1.5" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+// Live secondary-market price strip for a ticket. Hidden until `npm run prices`
+// has populated src/data/prices.json (so the public site never shows an empty rail).
+function PriceBand({ price }) {
+  if (!price || price.low == null) return null
+  const hist = price.history ?? []
+  const prevLow = hist.length > 1 ? hist[hist.length - 2].low : null
+  const delta = prevLow != null ? price.low - prevLow : null
+  return (
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-slate-800 bg-slate-900/70 px-4 py-2.5 text-sm">
+      <span className="font-semibold text-slate-200">
+        Live get-in <span className="text-emerald-300">{fmtUSD(price.low)}</span>
+      </span>
+      {delta != null && delta !== 0 && (
+        <span className={`text-xs ${delta > 0 ? 'text-rose-400' : 'text-emerald-400'}`}>
+          {delta > 0 ? '▲' : '▼'} {fmtUSD(Math.abs(delta))} since last check
+        </span>
+      )}
+      {price.high != null && <span className="text-slate-500">up to {fmtUSD(price.high)}</span>}
+      <Sparkline points={hist} />
+      <span className="ml-auto text-xs text-slate-600">
+        {price.checkedAt && `checked ${relTime(price.checkedAt)}`}
+        {price.url && (
+          <>
+            {price.checkedAt ? ' · ' : ''}
+            <a href={price.url} target="_blank" rel="noreferrer" className="text-sky-400 hover:underline">
+              {price.source ?? 'TickPick'} ↗
+            </a>
+          </>
+        )}
+        {price.seatgeekUrl && (
+          <>
+            {' · '}
+            <a href={price.seatgeekUrl} target="_blank" rel="noreferrer" className="text-sky-400 hover:underline">
+              SeatGeek ↗
+            </a>
+          </>
+        )}
+      </span>
+    </div>
+  )
+}
+
+function TicketCard({ ticket, groups, price }) {
   return (
     <section className="mb-8 overflow-hidden rounded-xl border border-emerald-600/30 bg-slate-900/40">
       <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-slate-800 bg-emerald-600/10 px-4 py-3">
@@ -250,6 +329,8 @@ function TicketCard({ ticket, groups }) {
           {ticket.venue} · {ticket.city} &nbsp;·&nbsp; {ticket.date}
         </div>
       </div>
+
+      <PriceBand price={price} />
 
       <div className="grid grid-cols-1 gap-4 px-4 py-4 sm:grid-cols-2">
         {ticket.sides.map((side, i) => (
@@ -286,7 +367,12 @@ export default function MyTickets({ groups }) {
       </p>
 
       {TICKETS.map((ticket) => (
-        <TicketCard key={ticket.id} ticket={ticket} groups={groups} />
+        <TicketCard
+          key={ticket.id}
+          ticket={ticket}
+          groups={groups}
+          price={pricesData.tickets?.[ticket.id]}
+        />
       ))}
 
       <DreamMatchups groups={groups} title="Dream R16 matchups · NYC" dreams={NYC_DREAMS} />
