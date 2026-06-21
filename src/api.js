@@ -39,7 +39,10 @@ function parseEvent(event) {
     statusDetail: event.status.type.detail,
     clock: event.status.displayClock,
     venue: comp.venue?.fullName ?? '',
+    // ESPN bakes "City, State" into `city` for US venues (state field is empty)
+    // and uses a bare city + `country` for Canada/Mexico.
     city: comp.venue?.address?.city ?? '',
+    country: comp.venue?.address?.country ?? '',
     tv: comp.broadcasts?.[0]?.names?.join(' / ') ?? '',
     // Goal/card scoring plays — carried in the scoreboard call itself, so the
     // whole-tournament Golden Boot race needs no extra requests.

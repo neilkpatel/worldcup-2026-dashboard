@@ -1,3 +1,5 @@
+import { venueInfo, venueLocation, venueLocalKickoff } from '../venues'
+
 const ROUND_ORDER = [
   'round-of-32',
   'round-of-16',
@@ -36,6 +38,11 @@ function TeamRow({ team, state, isWinner }) {
 
 function BracketMatch({ match }) {
   const dateLabel = match.date.toLocaleDateString([], { month: 'short', day: 'numeric' })
+  const info = venueInfo(match.venue)
+  const location = venueLocation(match)
+  // Kickoff in the stadium's own timezone — the knockouts run from Pacific
+  // (SoFi, Seattle, Vancouver) to Eastern, so "your" time alone is ambiguous.
+  const localKick = match.state === 'pre' ? venueLocalKickoff(match.date, match.venue) : null
   return (
     <div className="rounded-lg border border-slate-800 bg-slate-900 p-2 text-xs">
       <div className="mb-1 flex items-center justify-between text-[10px] text-slate-500">
@@ -57,6 +64,37 @@ function BracketMatch({ match }) {
         <TeamRow team={match.home} state={match.state} isWinner={match.home.winner} />
         <TeamRow team={match.away} state={match.state} isWinner={match.away.winner} />
       </div>
+
+      {(match.venue || match.tv) && (
+        <div className="mt-2 space-y-0.5 border-t border-slate-800 pt-1.5 text-[10px] leading-snug text-slate-500">
+          {match.venue && (
+            <div className="flex items-start gap-1">
+              <span aria-hidden>🏟</span>
+              <span className="flex-1">
+                <span className="text-slate-400">{match.venue}</span>
+                {location && <span> · {location}</span>}
+                {info && (
+                  <span className="block text-slate-600">
+                    {info.fifaName} · {info.capacity.toLocaleString()} seats
+                  </span>
+                )}
+              </span>
+            </div>
+          )}
+          {localKick && (
+            <div className="flex items-center gap-1">
+              <span aria-hidden>🕑</span>
+              <span>{localKick} local kickoff</span>
+            </div>
+          )}
+          {match.tv && (
+            <div className="flex items-center gap-1">
+              <span aria-hidden>📺</span>
+              <span>{match.tv}</span>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }
@@ -72,7 +110,8 @@ export default function Bracket({ matches }) {
       <p className="mb-4 text-xs text-slate-500">
         Single-elimination from the round of 32 (June 28) to the final (July 19).
         Slots show the qualification path until teams lock in, then fill with flags
-        and scores. Scroll sideways to follow the bracket →
+        and scores. Each game lists its stadium, location, local kickoff time and TV
+        channel. Scroll sideways to follow the bracket →
       </p>
 
       <div className="overflow-x-auto pb-2">
@@ -81,7 +120,7 @@ export default function Bracket({ matches }) {
             const round = byRound(slug)
             if (round.length === 0) return null
             return (
-              <div key={slug} className="w-56 shrink-0">
+              <div key={slug} className="w-64 shrink-0">
                 <h3 className="mb-3 text-sm font-semibold text-slate-300">
                   {ROUND_LABEL[slug]}
                   <span className="ml-1 text-xs font-normal text-slate-600">
@@ -100,7 +139,7 @@ export default function Bracket({ matches }) {
       </div>
 
       {thirdPlace.length > 0 && (
-        <div className="mt-6 max-w-56">
+        <div className="mt-6 max-w-64">
           <h3 className="mb-3 text-sm font-semibold text-slate-300">
             {ROUND_LABEL['3rd-place-match']}
           </h3>
