@@ -20,3 +20,33 @@ body {
 .live-row {
   animation: live-ring 1.4s ease-in-out infinite;
 }
+
+/* Pulsing green frame around today's slate — signals "these kick off today".
+   Outer glow so it reads as a big box around the whole grid of cards. */
+@keyframes today-glow {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 1px rgba(16, 185, 129, 0.45),
+      0 0 16px 0 rgba(16, 185, 129, 0.18);
+  }
+  50% {
+    box-shadow:
+      0 0 0 2px rgba(16, 185, 129, 0.95),
+      0 0 30px 4px rgba(16, 185, 129, 0.4);
+  }
+}
+.today-box {
+  animation: today-glow 2s ease-in-out infinite;
+}
+
+/* Respect reduced-motion: keep a steady green frame instead of flashing. */
+@media (prefers-reduced-motion: reduce) {
+  .live-row,
+  .today-box {
+    animation: none;
+    box-shadow:
+      0 0 0 2px rgba(16, 185, 129, 0.7),
+      0 0 18px 0 rgba(16, 185, 129, 0.3);
+  }
+}

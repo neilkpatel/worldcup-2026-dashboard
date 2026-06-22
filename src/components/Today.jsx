@@ -216,6 +216,7 @@ function FormChips({ label, games }) {
 // (for upcoming games) recent form + head-to-head from the match summary.
 function FixtureCard({ m, group, stakes, standingMap, summary }) {
   const pre = m.state === 'pre'
+  const live = m.state === 'in'
   const upset = upsetKind(m)
   const showStanding = m.round === 'group-stage'
   const where = [m.venue, m.city].filter(Boolean).join(', ')
@@ -228,7 +229,11 @@ function FixtureCard({ m, group, stakes, standingMap, summary }) {
   return (
     <div
       className={`group flex flex-col rounded-xl border bg-slate-900/40 p-3 transition duration-150 hover:-translate-y-0.5 hover:bg-slate-900 hover:shadow-lg hover:shadow-black/30 ${
-        upset ? 'border-amber-500/40' : 'border-slate-800 hover:border-emerald-600/50'
+        live
+          ? 'live-row border-emerald-500/60'
+          : upset
+            ? 'border-amber-500/40'
+            : 'border-slate-800 hover:border-emerald-600/50'
       }`}
     >
       <div className="mb-2 flex items-center justify-between">
@@ -291,22 +296,31 @@ function FixtureCard({ m, group, stakes, standingMap, summary }) {
 const STATE_RANK = { in: 0, pre: 1, post: 2 }
 const byWatchOrder = (a, b) => STATE_RANK[a.state] - STATE_RANK[b.state] || a.date - b.date
 
-function Scores({ title, matches, groupMap, groups, standingMap }) {
+function Scores({ title, matches, groupMap, groups, standingMap, highlight = false }) {
   // Pull summaries for upcoming games so each card can show form + head-to-head
   // (keyed by match-id set, so it only refetches when the slate changes).
   const summaries = useMatchSummaries(matches.filter((m) => m.state === 'pre'))
   if (matches.length === 0) return null
   const ordered = [...matches].sort(byWatchOrder)
+  const grid = (
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      {ordered.map((m) => (
+        <FixtureCard key={m.id} m={m} group={groupMap[m.home.id]} stakes={matchStakes(m, groups)} standingMap={standingMap} summary={summaries[m.id]} />
+      ))}
+    </div>
+  )
   return (
     <section className="mb-8">
       <h2 className="mb-3 text-sm font-semibold tracking-wide text-slate-400 uppercase">
         {title}
       </h2>
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {ordered.map((m) => (
-          <FixtureCard key={m.id} m={m} group={groupMap[m.home.id]} stakes={matchStakes(m, groups)} standingMap={standingMap} summary={summaries[m.id]} />
-        ))}
-      </div>
+      {highlight ? (
+        <div className="today-box rounded-2xl border border-emerald-500/40 bg-emerald-950/15 p-2.5 sm:p-3">
+          {grid}
+        </div>
+      ) : (
+        grid
+      )}
     </section>
   )
 }
@@ -315,6 +329,11 @@ function Scores({ title, matches, groupMap, groups, standingMap }) {
 // next / last fixture, surfaced at the very top of the Today tab.
 function FollowedTeam({ abbrev, matches, groups }) {
   const [news, setNews] = useState([])
+  // Headlines collapse by default on phones (these boxes get tall), but start
+  // open on ≥sm where there's room. The header toggles it on any width.
+  const [showNews, setShowNews] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia('(min-width: 640px)').matches,
+  )
   let standing = null
   let groupLetter = null
   for (const g of groups) {
@@ -407,23 +426,32 @@ function FollowedTeam({ abbrev, matches, groups }) {
         </div>
         {news.length > 0 && (
           <div className="mt-3 border-t border-emerald-800/30 pt-3">
-            <div className="mb-1.5 text-[10px] font-semibold tracking-wide text-emerald-400/80 uppercase">
+            <button
+              type="button"
+              onClick={() => setShowNews((v) => !v)}
+              aria-expanded={showNews}
+              className="flex w-full items-center gap-1.5 text-[10px] font-semibold tracking-wide text-emerald-400/80 uppercase"
+            >
               📰 {me.name} headlines
-            </div>
-            <ul className="space-y-1.5">
-              {news.slice(0, 4).map((a) => (
-                <li key={a.id}>
-                  <a
-                    href={a.link}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="block text-sm leading-snug text-sky-300/90 hover:text-sky-200 hover:underline"
-                  >
-                    {a.headline}
-                  </a>
-                </li>
-              ))}
-            </ul>
+              <span className="text-emerald-400/60">({news.slice(0, 4).length})</span>
+              <span className={`ml-auto transition-transform ${showNews ? 'rotate-180' : ''}`}>▾</span>
+            </button>
+            {showNews && (
+              <ul className="mt-1.5 space-y-1.5">
+                {news.slice(0, 4).map((a) => (
+                  <li key={a.id}>
+                    <a
+                      href={a.link}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="block text-sm leading-snug text-sky-300/90 hover:text-sky-200 hover:underline"
+                    >
+                      {a.headline}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         )}
       </div>
@@ -502,6 +530,7 @@ export default function Today({ matches, groupMap, groups, news = [] }) {
           groupMap={groupMap}
           groups={groups}
           standingMap={standingMap}
+          highlight
         />
       ) : nextDayMatches.length > 0 ? (
         <Scores
