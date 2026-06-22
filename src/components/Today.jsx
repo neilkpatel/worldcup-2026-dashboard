@@ -325,15 +325,35 @@ function Scores({ title, matches, groupMap, groups, standingMap, highlight = fal
   )
 }
 
-// Pinned panel for a team the user follows — its group standing plus its live /
-// next / last fixture, surfaced at the very top of the Today tab.
+// Tight, collapsed-by-default panel for the teams the user follows. Each team is
+// a single header row (logo · name · standing); tap to expand its fixtures +
+// headlines. Keeps the top of the Today tab compact since this data is static.
+function FollowingPanel({ abbrevs, matches, groups }) {
+  const present = abbrevs.filter((a) =>
+    matches.some((m) => m.home.abbrev === a || m.away.abbrev === a),
+  )
+  if (present.length === 0) return null
+  return (
+    <section className="mb-8">
+      <div className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-emerald-400/80">
+        ★ Following
+      </div>
+      <div className="divide-y divide-emerald-800/30 overflow-hidden rounded-xl border border-emerald-700/40 bg-gradient-to-br from-emerald-950/30 to-slate-900/40">
+        {present.map((a) => (
+          <FollowedTeam key={a} abbrev={a} matches={matches} groups={groups} />
+        ))}
+      </div>
+    </section>
+  )
+}
+
+// One collapsible team row inside FollowingPanel. Collapsed shows just the badge
+// row (with a LIVE chip if they're playing now); expanded reveals fixtures +
+// headlines. Auto-expands when the team goes live so a live game isn't buried.
 function FollowedTeam({ abbrev, matches, groups }) {
   const [news, setNews] = useState([])
-  // Headlines collapse by default on phones (these boxes get tall), but start
-  // open on ≥sm where there's room. The header toggles it on any width.
-  const [showNews, setShowNews] = useState(
-    () => typeof window !== 'undefined' && window.matchMedia('(min-width: 640px)').matches,
-  )
+  // null = follow the default (open iff live); a click pins it to a boolean.
+  const [override, setOverride] = useState(null)
   let standing = null
   let groupLetter = null
   for (const g of groups) {
@@ -349,9 +369,10 @@ function FollowedTeam({ abbrev, matches, groups }) {
   const oppOf = (m) => (m.home.abbrev === abbrev ? m.away : m.home)
   const me = mine.length ? selfOf(mine.find((m) => selfOf(m).logo) ?? mine[0]) : null
   const teamId = me?.id ?? standing?.id ?? null
+  const hasLive = mine.some((m) => m.state === 'in')
 
-  // Team-specific ESPN headlines for this box (USMNT, Iran, …). Best-effort —
-  // a failure just leaves the box without a headlines section.
+  // Team-specific ESPN headlines for this row (USMNT, Iran, …). Best-effort —
+  // a failure just leaves the row without a headlines section.
   useEffect(() => {
     if (!teamId) return
     let alive = true
@@ -362,6 +383,10 @@ function FollowedTeam({ abbrev, matches, groups }) {
       alive = false
     }
   }, [teamId])
+
+  // Open by default while the team is live (so a live game isn't buried); a
+  // manual toggle overrides that default until the next render-driven change.
+  const open = override ?? hasLive
 
   if (mine.length === 0) return null
 
@@ -398,46 +423,45 @@ function FollowedTeam({ abbrev, matches, groups }) {
   }
 
   return (
-    <section className="mb-8">
-      <div className="rounded-xl border border-emerald-700/40 bg-gradient-to-br from-emerald-950/40 to-slate-900/40 p-4">
-        <div className="flex items-center gap-3">
-          {me.logo && <img src={me.logo} alt="" className="h-10 w-10 object-contain" />}
-          <div className="min-w-0">
-            <div className="text-[10px] font-semibold uppercase tracking-wide text-emerald-400/80">
-              ★ Following
-            </div>
-            <div className="text-lg font-bold text-slate-100">{me.name}</div>
-          </div>
+    <div>
+      <button
+        type="button"
+        onClick={() => setOverride(!open)}
+        aria-expanded={open}
+        className="flex w-full items-center gap-3 p-3 text-left transition-colors hover:bg-emerald-900/15"
+      >
+        {me.logo && <img src={me.logo} alt="" className="h-7 w-7 shrink-0 object-contain" />}
+        <div className="min-w-0">
+          <div className="text-sm font-bold text-slate-100">{me.name}</div>
           {standing && (
-            <div className="ml-auto text-right text-xs text-slate-400">
-              <div className="font-semibold text-slate-200">
-                Group {groupLetter} · {ordinal(standing.rank)}
-              </div>
-              <div>
-                {standing.points} pts · {standing.wins}-{standing.draws}-{standing.losses}
-              </div>
+            <div className="text-xs text-slate-400">
+              Group {groupLetter} · {ordinal(standing.rank)} · {standing.points} pts
             </div>
           )}
         </div>
-        <div className="mt-3 space-y-1 border-t border-emerald-800/30 pt-3 text-sm text-slate-300">
-          {live && <div>{renderFixture(live, 'live')}</div>}
-          {next && <div>{renderFixture(next, 'next')}</div>}
-          {last && <div>{renderFixture(last, 'last')}</div>}
+        <div className="ml-auto flex shrink-0 items-center gap-2">
+          {live && (
+            <span className="flex items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-semibold text-emerald-400">
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
+              LIVE
+            </span>
+          )}
+          <span className={`text-slate-500 transition-transform ${open ? 'rotate-180' : ''}`}>▾</span>
         </div>
-        {news.length > 0 && (
-          <div className="mt-3 border-t border-emerald-800/30 pt-3">
-            <button
-              type="button"
-              onClick={() => setShowNews((v) => !v)}
-              aria-expanded={showNews}
-              className="flex w-full items-center gap-1.5 text-[10px] font-semibold tracking-wide text-emerald-400/80 uppercase"
-            >
-              📰 {me.name} headlines
-              <span className="text-emerald-400/60">({news.slice(0, 4).length})</span>
-              <span className={`ml-auto transition-transform ${showNews ? 'rotate-180' : ''}`}>▾</span>
-            </button>
-            {showNews && (
-              <ul className="mt-1.5 space-y-1.5">
+      </button>
+      {open && (
+        <div className="px-3 pb-3">
+          <div className="space-y-1 border-t border-emerald-800/30 pt-3 text-sm text-slate-300">
+            {live && <div>{renderFixture(live, 'live')}</div>}
+            {next && <div>{renderFixture(next, 'next')}</div>}
+            {last && <div>{renderFixture(last, 'last')}</div>}
+          </div>
+          {news.length > 0 && (
+            <div className="mt-3 border-t border-emerald-800/30 pt-3">
+              <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-400/80">
+                📰 {me.name} headlines
+              </div>
+              <ul className="space-y-1.5">
                 {news.slice(0, 4).map((a) => (
                   <li key={a.id}>
                     <a
@@ -451,11 +475,11 @@ function FollowedTeam({ abbrev, matches, groups }) {
                   </li>
                 ))}
               </ul>
-            )}
-          </div>
-        )}
-      </div>
-    </section>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -518,9 +542,8 @@ export default function Today({ matches, groupMap, groups, news = [] }) {
 
   return (
     <div>
-      {/* ── Followed teams, pinned (USA, then Iran) ── */}
-      <FollowedTeam abbrev="USA" matches={matches} groups={groups} />
-      <FollowedTeam abbrev="IRN" matches={matches} groups={groups} />
+      {/* ── Followed teams, pinned (USA, then Iran) — compact collapsible rows ── */}
+      <FollowingPanel abbrevs={['USA', 'IRN']} matches={matches} groups={groups} />
 
       {/* ── Today's fixtures (or the next slate on off-days) ── */}
       {todayMatches.length > 0 ? (
