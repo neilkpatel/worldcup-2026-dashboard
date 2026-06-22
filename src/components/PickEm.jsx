@@ -103,6 +103,64 @@ function PickRow({ m, group, mine, onPick, saving }) {
   )
 }
 
+// Once a match kicks off, reveal who picked what. Picks for not-yet-started
+// matches are never shown to others (the pick grid only renders your own), so
+// this is the moment everyone's calls become visible.
+function RevealCard({ m, group, picks, clientId }) {
+  const result = matchResult(m) // null while live
+  const live = m.state === 'in'
+  const buckets = { home: [], draw: [], away: [] }
+  for (const p of picks) if (p.match_id === m.id && buckets[p.pick]) buckets[p.pick].push(p)
+  const labelFor = (key) =>
+    key === 'home' ? m.home.abbrev || 'Home' : key === 'away' ? m.away.abbrev || 'Away' : 'Draw'
+  const keys = ['home', 'draw', 'away'].filter(
+    (k) => k !== 'draw' || m.round === 'group-stage' || buckets.draw.length > 0,
+  )
+  return (
+    <div className="rounded-lg border border-slate-800 bg-slate-900/40 p-3">
+      <div className="mb-1 grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+        <TeamCell team={m.home} />
+        <span className="text-sm font-bold tabular-nums text-slate-100">
+          {m.home.score}–{m.away.score}
+        </span>
+        <TeamCell team={m.away} align="right" />
+      </div>
+      <div className="mb-2 flex items-center justify-between text-[10px] text-slate-500">
+        <span>{group ? `Group ${group}` : 'Knockout'}</span>
+        {live ? (
+          <span className="font-semibold text-emerald-400">{m.clock || 'LIVE'}</span>
+        ) : (
+          <span>Final</span>
+        )}
+      </div>
+      <div className="space-y-1">
+        {keys.map((key) => {
+          const isResult = result === key
+          return (
+            <div
+              key={key}
+              className={`flex gap-2 rounded px-2 py-1 text-xs ${isResult ? 'bg-emerald-950/50' : ''}`}
+            >
+              <span
+                className={`w-10 shrink-0 font-semibold ${isResult ? 'text-emerald-400' : 'text-slate-400'}`}
+              >
+                {labelFor(key)}
+              </span>
+              <span className="text-slate-300">
+                {buckets[key].length
+                  ? buckets[key]
+                      .map((p) => (p.client_id === clientId ? `${p.name} (you)` : p.name))
+                      .join(', ')
+                  : '—'}
+              </span>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 function Leaderboard({ rows, clientId }) {
   if (rows.length === 0) {
     return (
@@ -227,9 +285,12 @@ export default function PickEm({ matches, groupMap }) {
   const upcoming = matches
     .filter((m) => m.state === 'pre' && m.date > now && isReal(m))
     .sort((a, b) => a.date - b.date)
-  const myFinished = matches
-    .filter((m) => m.state === 'post' && myPicks[m.id])
+  // Matches that have kicked off (live or final) and got at least one pick —
+  // newest first. These are the ones we reveal everyone's picks for.
+  const revealed = matches
+    .filter((m) => (m.state === 'in' || m.state === 'post') && picks.some((p) => p.match_id === m.id))
     .sort((a, b) => b.date - a.date)
+    .slice(0, 12)
 
   // Group upcoming picks by day for a readable sheet.
   const days = []
@@ -300,12 +361,13 @@ export default function PickEm({ matches, groupMap }) {
         )}
       </section>
 
-      {myFinished.length > 0 && (
+      {revealed.length > 0 && (
         <section>
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-400">📋 Your results</h2>
+          <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-slate-400">🔓 Revealed picks</h2>
+          <p className="mb-3 text-xs text-slate-500">Everyone's picks unlock once a match kicks off.</p>
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-            {myFinished.map((m) => (
-              <PickRow key={m.id} m={m} group={groupMap[m.home.id]} mine={myPicks[m.id]} onPick={() => {}} />
+            {revealed.map((m) => (
+              <RevealCard key={m.id} m={m} group={groupMap[m.home.id]} picks={picks} clientId={clientId} />
             ))}
           </div>
         </section>
