@@ -23,6 +23,10 @@ const TZ_SHORT =
 
 function App() {
   const [tab, setTab] = useState('Today')
+  // "NEW" badge on the Pick'em tab — drops away per-visitor once they've opened it.
+  const [pickemSeen, setPickemSeen] = useState(
+    () => typeof localStorage !== 'undefined' && localStorage.getItem('wc_pickem_seen') === '1',
+  )
   const [matches, setMatches] = useState([])
   const [groups, setGroups] = useState([])
   const [news, setNews] = useState([])
@@ -79,14 +83,25 @@ function App() {
             {TABS.map((t) => (
               <button
                 key={t}
-                onClick={() => setTab(t)}
-                className={`shrink-0 whitespace-nowrap rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+                onClick={() => {
+                  setTab(t)
+                  if (t === "Pick'em" && !pickemSeen) {
+                    setPickemSeen(true)
+                    localStorage.setItem('wc_pickem_seen', '1')
+                  }
+                }}
+                className={`relative shrink-0 whitespace-nowrap rounded-md px-3 py-2 text-sm font-medium transition-colors ${
                   tab === t
                     ? 'bg-emerald-600 text-white'
                     : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
                 }`}
               >
                 {t}
+                {t === "Pick'em" && !pickemSeen && (
+                  <span className="ml-1.5 inline-flex animate-pulse rounded-full bg-amber-400 px-1.5 py-px text-[9px] font-bold uppercase tracking-wide text-slate-900 align-[1px]">
+                    New
+                  </span>
+                )}
               </button>
             ))}
           </nav>
