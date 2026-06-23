@@ -13,13 +13,19 @@ import reports from '../data/reports.json'
 // response never blanks the rest; refetches only when the set of ids changes.
 function useMatchSummaries(matches) {
   const [summaries, setSummaries] = useState({})
-  const ids = matches.map((m) => m.id).join(',')
+  // Refetch when the match set changes, OR when a live game ticks (its clock /
+  // score moves) — so live stats stay current. Pre/finished games are stable, so
+  // they fetch once.
+  const key = matches
+    .map((m) => (m.state === 'in' ? `${m.id}@${m.clock}@${m.home.score}-${m.away.score}` : m.id))
+    .join(',')
 
   useEffect(() => {
-    if (!ids) return
+    if (!key) return
+    const ids = key.split(',').map((s) => s.split('@')[0])
     let cancelled = false
     Promise.all(
-      ids.split(',').map(async (id) => {
+      ids.map(async (id) => {
         try {
           return [id, await fetchMatchSummary(id)]
         } catch {
@@ -32,7 +38,7 @@ function useMatchSummaries(matches) {
     return () => {
       cancelled = true
     }
-  }, [ids])
+  }, [key])
 
   return summaries
 }
@@ -143,14 +149,42 @@ function kickoffCountdown(date) {
   return `in ${Math.floor(h / 24)}d ${h % 24}h`
 }
 
+// Live minute that advances locally between the 60s data refreshes so the clock
+// visibly moves. Only ticks a plain running minute ("47'"); halftime, stoppage
+// ("45'+2'") and extra time are shown verbatim from ESPN.
+function useLiveClock(m) {
+  const base = m.clock || ''
+  const plain = /^\d+'$/.test(base)
+  const [seenBase, setSeenBase] = useState(base)
+  const [tick, setTick] = useState(0)
+  if (base !== seenBase) {
+    setSeenBase(base)
+    setTick(0)
+  }
+  useEffect(() => {
+    if (m.state !== 'in' || !plain) return
+    const id = setInterval(() => setTick((t) => Math.min(t + 1, 2)), 60000)
+    return () => clearInterval(id)
+  }, [m.state, plain, base])
+  if (m.state !== 'in' || !plain) return base
+  return `${parseInt(base, 10) + tick}'`
+}
+
 function StatusPill({ m }) {
-  if (m.state === 'in')
+  const clock = useLiveClock(m)
+  if (m.state === 'in') {
+    const half = /ht|half/i.test(m.statusDetail || '')
     return (
-      <span className="flex items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[11px] font-bold text-emerald-400">
-        <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
-        {m.clock || 'LIVE'}
+      <span
+        className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-bold ${
+          half ? 'bg-amber-500/15 text-amber-400' : 'bg-emerald-500/15 text-emerald-400'
+        }`}
+      >
+        {!half && <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />}
+        {half ? 'HALFTIME' : clock || 'LIVE'}
       </span>
     )
+  }
   if (m.state === 'post')
     return (
       <span className="rounded-full bg-slate-700/50 px-2 py-0.5 text-[11px] font-semibold text-slate-300">FT</span>
@@ -215,7 +249,7 @@ function FormChips({ label, games }) {
 // Goals + cards for a live or finished match, taken straight from the scoreboard
 // `details` (which refreshes every 60s — so a live game's timeline fills in as it
 // happens, no extra request). Same who-scored-when info the recaps show.
-function EventTimeline({ m }) {
+function EventTimeline({ m, live }) {
   const events = (m.details ?? []).filter((d) => d.scoringPlay || /card/i.test(d.type))
   if (events.length === 0) return null
   const abbrFor = (id) =>
@@ -228,21 +262,71 @@ function EventTimeline({ m }) {
   }
   return (
     <ul className="mt-2 space-y-0.5 border-t border-slate-800 pt-2 text-[11px] text-slate-400">
-      {events.map((d, i) => (
-        <li key={i} className="flex items-baseline gap-1.5">
-          <span className="w-3 shrink-0 text-center">{icon(d)}</span>
-          <span className="w-11 shrink-0 tabular-nums text-slate-500">{d.minute}</span>
-          <span className="min-w-0 truncate text-slate-300">
-            {d.scorer || d.type}
-            {d.scoringPlay && d.penalty ? ' (P)' : ''}
-            {d.ownGoal ? ' (OG)' : ''}
-          </span>
-          {abbrFor(d.teamId) && (
-            <span className="ml-auto shrink-0 font-medium text-slate-500">{abbrFor(d.teamId)}</span>
-          )}
-        </li>
-      ))}
+      {events.map((d, i) => {
+        // On a live game, spotlight the most recent event ("latest action").
+        const latest = live && i === events.length - 1
+        return (
+          <li
+            key={i}
+            className={`flex items-baseline gap-1.5 ${latest ? '-mx-1 rounded bg-emerald-950/50 px-1 py-0.5' : ''}`}
+          >
+            <span className="w-3 shrink-0 text-center">{icon(d)}</span>
+            <span className="w-11 shrink-0 tabular-nums text-slate-500">{d.minute}</span>
+            <span className={`min-w-0 truncate ${latest ? 'font-semibold text-emerald-300' : 'text-slate-300'}`}>
+              {d.scorer || d.type}
+              {d.scoringPlay && d.penalty ? ' (P)' : ''}
+              {d.ownGoal ? ' (OG)' : ''}
+            </span>
+            {abbrFor(d.teamId) && (
+              <span className="ml-auto shrink-0 font-medium text-slate-500">{abbrFor(d.teamId)}</span>
+            )}
+          </li>
+        )
+      })}
     </ul>
+  )
+}
+
+// Live (or final) team stats bars — possession, shots, on-target, corners — from
+// the summary boxscore. Home = emerald (left), away = sky (right).
+function LiveStats({ stats }) {
+  if (!stats?.home || !stats?.away) return null
+  const num = (v) => {
+    const n = parseInt(v, 10)
+    return Number.isFinite(n) ? n : 0
+  }
+  const rows = [
+    { label: 'Possession', h: stats.home.possession, a: stats.away.possession, pct: true },
+    { label: 'Shots', h: stats.home.shots, a: stats.away.shots },
+    { label: 'On target', h: stats.home.onTarget, a: stats.away.onTarget },
+    { label: 'Corners', h: stats.home.corners, a: stats.away.corners },
+  ].filter((r) => r.h != null || r.a != null)
+  if (rows.length === 0) return null
+  return (
+    <div className="mt-2 space-y-1.5 border-t border-slate-800 pt-2">
+      {rows.map((r) => {
+        const h = num(r.h)
+        const a = num(r.a)
+        const share = r.pct
+          ? Math.max(0, Math.min(100, h))
+          : h + a > 0
+            ? Math.round((h / (h + a)) * 100)
+            : 50
+        return (
+          <div key={r.label}>
+            <div className="flex items-center justify-between text-[10px] text-slate-400">
+              <span className="w-8 text-left font-semibold tabular-nums text-slate-200">{r.h ?? '–'}</span>
+              <span className="uppercase tracking-wide">{r.label}</span>
+              <span className="w-8 text-right font-semibold tabular-nums text-slate-200">{r.a ?? '–'}</span>
+            </div>
+            <div className="mt-0.5 flex h-1.5 overflow-hidden rounded-full bg-slate-700">
+              <div className="bg-emerald-500" style={{ width: `${share}%` }} />
+              <div className="bg-sky-500" style={{ width: `${100 - share}%` }} />
+            </div>
+          </div>
+        )
+      })}
+    </div>
   )
 }
 
@@ -260,9 +344,27 @@ function FixtureCard({ m, group, stakes, standingMap, summary }) {
   const hasForm = pre && form && (form[m.home.id] || form[m.away.id])
   const hasPreview = where || m.tv || showStake || hasForm || (pre && h2h)
 
+  // Goal celebration: when the combined score ticks up on a live game, flash the
+  // card + pop a GOAL! banner. Detect during render (previous-value pattern);
+  // a timer clears it (setState only inside the timeout, never synchronously).
+  const goalTotal = (Number(m.home.score) || 0) + (Number(m.away.score) || 0)
+  const [seenTotal, setSeenTotal] = useState(goalTotal)
+  const [celebrate, setCelebrate] = useState(false)
+  if (goalTotal !== seenTotal) {
+    if (live && goalTotal > seenTotal) setCelebrate(true)
+    setSeenTotal(goalTotal)
+  }
+  useEffect(() => {
+    if (!celebrate) return
+    const t = setTimeout(() => setCelebrate(false), 3500)
+    return () => clearTimeout(t)
+  }, [celebrate])
+
   return (
     <div
-      className={`group flex flex-col rounded-xl border bg-slate-900/40 p-3 transition duration-150 hover:-translate-y-0.5 hover:bg-slate-900 hover:shadow-lg hover:shadow-black/30 ${
+      className={`group relative flex flex-col rounded-xl border bg-slate-900/40 p-3 transition duration-150 hover:-translate-y-0.5 hover:bg-slate-900 hover:shadow-lg hover:shadow-black/30 ${
+        celebrate ? 'goal-flash ' : ''
+      }${
         live
           ? 'live-row border-emerald-500/60'
           : upset
@@ -270,6 +372,13 @@ function FixtureCard({ m, group, stakes, standingMap, summary }) {
             : 'border-slate-800 hover:border-emerald-600/50'
       }`}
     >
+      {celebrate && (
+        <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
+          <span className="goal-pop rounded-full bg-emerald-500 px-4 py-1.5 text-lg font-extrabold text-white shadow-lg shadow-emerald-900/50">
+            ⚽ GOAL!
+          </span>
+        </div>
+      )}
       <div className="mb-2 flex items-center justify-between">
         <span className="rounded bg-slate-800 px-1.5 py-0.5 text-[10px] font-medium text-slate-400">
           {group ? `Group ${group}` : 'Knockout'}
@@ -293,7 +402,9 @@ function FixtureCard({ m, group, stakes, standingMap, summary }) {
         <FixtureSide team={m.away} state={m.state} winner={m.away.winner} standing={showStanding ? standingMap?.[m.away.id] : null} />
       </div>
 
-      {(m.state === 'in' || m.state === 'post') && <EventTimeline m={m} />}
+      {(m.state === 'in' || m.state === 'post') && <EventTimeline m={m} live={live} />}
+
+      {live && <LiveStats stats={summary?.stats} />}
 
       {pre && (
         <div className="mt-2 text-center text-[11px] font-medium text-emerald-400/80">
@@ -335,7 +446,7 @@ const byWatchOrder = (a, b) => STATE_RANK[a.state] - STATE_RANK[b.state] || a.da
 function Scores({ title, matches, groupMap, groups, standingMap, highlight = false }) {
   // Pull summaries for upcoming games so each card can show form + head-to-head
   // (keyed by match-id set, so it only refetches when the slate changes).
-  const summaries = useMatchSummaries(matches.filter((m) => m.state === 'pre'))
+  const summaries = useMatchSummaries(matches.filter((m) => m.state === 'pre' || m.state === 'in'))
   if (matches.length === 0) return null
   const ordered = [...matches].sort(byWatchOrder)
   const grid = (

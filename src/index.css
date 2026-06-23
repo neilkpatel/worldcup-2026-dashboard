@@ -40,6 +40,45 @@ body {
   animation: today-glow 2s ease-in-out infinite;
 }
 
+/* Goal! — a green flash + a popped banner when a live score ticks up. */
+@keyframes goal-flash {
+  0% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+  }
+  15% {
+    box-shadow:
+      0 0 0 3px rgba(16, 185, 129, 0.95),
+      0 0 34px 8px rgba(16, 185, 129, 0.5);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+  }
+}
+.goal-flash {
+  animation: goal-flash 1.2s ease-out 2;
+}
+@keyframes goal-pop {
+  0% {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+  18% {
+    transform: scale(1.12);
+    opacity: 1;
+  }
+  78% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0;
+  }
+}
+.goal-pop {
+  animation: goal-pop 3.5s ease-out forwards;
+}
+
 /* Respect reduced-motion: keep a steady green frame instead of flashing. */
 @media (prefers-reduced-motion: reduce) {
   .live-row,
@@ -48,5 +87,12 @@ body {
     box-shadow:
       0 0 0 2px rgba(16, 185, 129, 0.7),
       0 0 18px 0 rgba(16, 185, 129, 0.3);
+  }
+  .goal-flash {
+    animation: none;
+  }
+  .goal-pop {
+    animation: none;
+    opacity: 1;
   }
 }
