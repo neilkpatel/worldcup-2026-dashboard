@@ -27,10 +27,12 @@ function TeamRow({ team, state, isWinner }) {
       ) : (
         <span className="h-4 w-4 shrink-0 rounded-full border border-dashed border-slate-700" />
       )}
-      <span className="flex-1 truncate" title={team.name}>
-        {team.name}
-      </span>
-      <FifaRank abbrev={team.abbrev} className="shrink-0 text-[9px]" />
+      <div className="flex min-w-0 flex-1 items-baseline gap-1">
+        <span className="truncate" title={team.name}>
+          {team.name}
+        </span>
+        <FifaRank abbrev={team.abbrev} className="shrink-0 text-[9px]" />
+      </div>
       {state !== 'pre' && (
         <span className={`tabular-nums ${isWinner ? 'font-bold' : ''}`}>{team.score}</span>
       )}

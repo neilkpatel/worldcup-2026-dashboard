@@ -92,14 +92,16 @@ function ThirdPlaceRace({ groups }) {
               <span className="w-6 shrink-0 text-right tabular-nums text-slate-500">{t.position}</span>
               <span className="w-6 shrink-0 text-xs text-slate-500">{t.group}</span>
               {t.logo && <img src={t.logo} alt="" className="h-5 w-5 shrink-0 object-contain" />}
-              <span
-                className={`min-w-0 flex-1 truncate ${
-                  t.qualifying ? 'font-semibold text-emerald-200' : 'text-slate-300'
-                }`}
-              >
-                {t.name}
-              </span>
-              <FifaRank abbrev={t.abbrev} className="shrink-0 text-[10px]" />
+              <div className="flex min-w-0 flex-1 items-baseline gap-1.5">
+                <span
+                  className={`truncate ${
+                    t.qualifying ? 'font-semibold text-emerald-200' : 'text-slate-300'
+                  }`}
+                >
+                  {t.name}
+                </span>
+                <FifaRank abbrev={t.abbrev} className="shrink-0 text-[10px]" />
+              </div>
               <span className="shrink-0 text-xs text-slate-500">
                 GD {t.gd > 0 ? `+${t.gd}` : t.gd} · GF {t.gf}
               </span>

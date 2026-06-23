@@ -5,8 +5,10 @@ function TeamRow({ team, state, isWinner }) {
   return (
     <div className={`flex items-center gap-3 ${dim ? 'opacity-50' : ''}`}>
       <img src={team.logo} alt="" className="h-6 w-6 object-contain" loading="lazy" />
-      <span className="min-w-0 flex-1 truncate font-medium">{team.name}</span>
-      <FifaRank abbrev={team.abbrev} className="shrink-0 text-[10px]" />
+      <div className="flex min-w-0 flex-1 items-baseline gap-1.5">
+        <span className="truncate font-medium">{team.name}</span>
+        <FifaRank abbrev={team.abbrev} className="shrink-0 text-[10px]" />
+      </div>
       {state !== 'pre' && (
         <span className={`text-lg tabular-nums ${isWinner ? 'font-bold' : ''}`}>
           {team.score}
