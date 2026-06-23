@@ -1,8 +1,9 @@
 import { ordinal } from '../stats'
 
 // Compact "how they're doing" chip for a team in a group-stage fixture/result:
-// group position + points, tinted by qualification zone (top-2 green, 3rd amber,
-// 4th/out slate). Teams yet to play just show "0 pts". Full record on hover.
+// group position, points + W-D-L record, tinted by qualification zone (top-2
+// green, 3rd amber, 4th/out slate). Teams yet to play just show "0 pts". Goal
+// difference stays on hover.
 export default function TeamStanding({ s }) {
   if (!s) return null
   const fresh = s.played === 0
@@ -15,7 +16,7 @@ export default function TeamStanding({ s }) {
         : 'text-slate-500'
   const label = fresh
     ? `${s.points} pts`
-    : `${ordinal(s.rank)} · ${s.points} ${s.points === 1 ? 'pt' : 'pts'}`
+    : `${ordinal(s.rank)} · ${s.points} ${s.points === 1 ? 'pt' : 'pts'} · ${s.wins}-${s.draws}-${s.losses}`
   return (
     <span
       title={`Group ${s.group} · Played ${s.played} · ${s.wins}W ${s.draws}D ${s.losses}L · GD ${s.gd > 0 ? '+' : ''}${s.gd}`}

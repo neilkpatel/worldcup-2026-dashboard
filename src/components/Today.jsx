@@ -471,7 +471,7 @@ function FollowedTeam({ abbrev, matches, groups }) {
           <div className="text-sm font-bold text-slate-100">{me.name}</div>
           {standing && (
             <div className="text-xs text-slate-400">
-              Group {groupLetter} · {ordinal(standing.rank)} · {standing.points} pts
+              Group {groupLetter} · {ordinal(standing.rank)} · {standing.points} pts · {standing.wins}-{standing.draws}-{standing.losses}
             </div>
           )}
         </div>
