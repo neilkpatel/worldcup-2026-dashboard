@@ -212,6 +212,40 @@ function FormChips({ label, games }) {
   )
 }
 
+// Goals + cards for a live or finished match, taken straight from the scoreboard
+// `details` (which refreshes every 60s — so a live game's timeline fills in as it
+// happens, no extra request). Same who-scored-when info the recaps show.
+function EventTimeline({ m }) {
+  const events = (m.details ?? []).filter((d) => d.scoringPlay || /card/i.test(d.type))
+  if (events.length === 0) return null
+  const abbrFor = (id) =>
+    id === m.home.id ? m.home.abbrev : id === m.away.id ? m.away.abbrev : ''
+  const icon = (d) => {
+    if (d.scoringPlay) return '⚽'
+    if (/red/i.test(d.type)) return '🟥'
+    if (/yellow/i.test(d.type)) return '🟨'
+    return '•'
+  }
+  return (
+    <ul className="mt-2 space-y-0.5 border-t border-slate-800 pt-2 text-[11px] text-slate-400">
+      {events.map((d, i) => (
+        <li key={i} className="flex items-baseline gap-1.5">
+          <span className="w-3 shrink-0 text-center">{icon(d)}</span>
+          <span className="w-11 shrink-0 tabular-nums text-slate-500">{d.minute}</span>
+          <span className="min-w-0 truncate text-slate-300">
+            {d.scorer || d.type}
+            {d.scoringPlay && d.penalty ? ' (P)' : ''}
+            {d.ownGoal ? ' (OG)' : ''}
+          </span>
+          {abbrFor(d.teamId) && (
+            <span className="ml-auto shrink-0 font-medium text-slate-500">{abbrFor(d.teamId)}</span>
+          )}
+        </li>
+      ))}
+    </ul>
+  )
+}
+
 // Fixture card with an always-visible preview: venue, TV and what's at stake, plus
 // (for upcoming games) recent form + head-to-head from the match summary.
 function FixtureCard({ m, group, stakes, standingMap, summary }) {
@@ -258,6 +292,8 @@ function FixtureCard({ m, group, stakes, standingMap, summary }) {
         </div>
         <FixtureSide team={m.away} state={m.state} winner={m.away.winner} standing={showStanding ? standingMap?.[m.away.id] : null} />
       </div>
+
+      {(m.state === 'in' || m.state === 'post') && <EventTimeline m={m} />}
 
       {pre && (
         <div className="mt-2 text-center text-[11px] font-medium text-emerald-400/80">
