@@ -7,6 +7,7 @@ import { matchStakes, MARQUEE } from '../stakes'
 import { buildStandingMap, ordinal } from '../stats'
 import TeamStanding from './TeamStanding'
 import reports from '../data/reports.json'
+import { IRAN_WAR_STATUS } from '../data/iranWarStatus'
 
 // Lazily fetch per-match recap detail (scorers, stats, headline) for a set of
 // finished matches. Returns { [id]: summary }. Best-effort per match so one bad
@@ -500,6 +501,57 @@ function Scores({ title, matches, groupMap, groups, standingMap, highlight = fal
   )
 }
 
+// Single-serving "Is the war with Iran over?" indicator for the Iran popout.
+// Three honest states; the answer is sourced + dated, with a live-coverage link
+// that's always current even if our snapshot lags. See ../data/iranWarStatus.js.
+const WAR_STATES = {
+  over: { answer: 'YES', sub: "it's over", badge: 'bg-emerald-500 text-white', frame: 'border-emerald-600/40 bg-emerald-950/30' },
+  active: { answer: 'NO', sub: 'active war', badge: 'bg-rose-600 text-white', frame: 'border-rose-700/40 bg-rose-950/30' },
+  ceasefire: { answer: 'FRAGILE CEASEFIRE', sub: 'holding, but shaky', badge: 'bg-amber-500 text-slate-900', frame: 'border-amber-600/40 bg-amber-950/20' },
+}
+
+function WarStatus() {
+  const [open, setOpen] = useState(false)
+  const s = WAR_STATES[IRAN_WAR_STATUS.state] ?? WAR_STATES.ceasefire
+  const asOf = new Date(`${IRAN_WAR_STATUS.asOf}T00:00:00`).toLocaleDateString([], {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  })
+  return (
+    <div className="mt-3 border-t border-emerald-800/30 pt-3">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        className="flex w-full items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-400/80"
+      >
+        🕊️ Is the war with Iran over?
+        <span className={`ml-auto transition-transform ${open ? 'rotate-180' : ''}`}>▾</span>
+      </button>
+      {open && (
+        <div className={`mt-2 rounded-lg border p-3 text-center ${s.frame}`}>
+          <div className={`inline-block rounded-md px-3 py-1 text-lg font-extrabold tracking-wide ${s.badge}`}>
+            {s.answer}
+          </div>
+          <div className="mt-1 text-xs text-slate-400">{s.sub}</div>
+          <div className="mt-2 text-[10px] text-slate-500">
+            as of {asOf} ·{' '}
+            <a
+              href={IRAN_WAR_STATUS.source}
+              target="_blank"
+              rel="noreferrer"
+              className="text-sky-300/90 underline hover:text-sky-200"
+            >
+              live coverage →
+            </a>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // Tight, collapsed-by-default panel for the teams the user follows. Each team is
 // a single header row (logo · name · standing); tap to expand its fixtures +
 // headlines. Keeps the top of the Today tab compact since this data is static.
@@ -652,6 +704,7 @@ function FollowedTeam({ abbrev, matches, groups }) {
               </ul>
             </div>
           )}
+          {abbrev === 'IRN' && <WarStatus />}
         </div>
       )}
     </div>
