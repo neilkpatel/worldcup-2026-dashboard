@@ -8,6 +8,11 @@ import { buildStandingMap, ordinal } from '../stats'
 import TeamStanding from './TeamStanding'
 import reports from '../data/reports.json'
 import { IRAN_WAR_STATUS } from '../data/iranWarStatus'
+import { FIFA_RANKS } from '../data/fifaRankings'
+import { NYC_BARS } from '../data/nycBars'
+
+// Google Maps search link for a bar (name + area), so we store no addresses.
+const barMapUrl = (b) => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${b.name} ${b.area}`)}`
 
 // Lazily fetch per-match recap detail (scorers, stats, headline) for a set of
 // finished matches. Returns { [id]: summary }. Best-effort per match so one bad
@@ -199,6 +204,7 @@ function StatusPill({ m }) {
 
 function FixtureSide({ team, state, winner, standing }) {
   const dim = state === 'post' && !winner
+  const rank = FIFA_RANKS[team.abbrev]
   return (
     <div className="flex min-w-0 flex-1 flex-col items-center gap-1.5">
       <img
@@ -214,6 +220,7 @@ function FixtureSide({ team, state, winner, standing }) {
       >
         {team.shortName || team.name}
       </span>
+      {rank && <span className="text-[9px] font-semibold tracking-wide text-slate-500">FIFA #{rank}</span>}
       {standing && <TeamStanding s={standing} />}
     </div>
   )
@@ -357,6 +364,40 @@ function OddsRow({ odds, home, away }) {
   )
 }
 
+// Compact "watch in NYC" teaser on a fixture card: top nationality spot per team
+// if we have one, else a reliable general pub. The full planner is the Bars tab.
+function WatchTeaser({ m }) {
+  const top = (name) => {
+    const list = NYC_BARS.byCountry[name]
+    return list && list.length ? list[0] : null
+  }
+  const rows = []
+  const h = top(m.home.name)
+  const a = top(m.away.name)
+  if (h) rows.push({ label: m.home.abbrev || m.home.name, bar: h })
+  if (a) rows.push({ label: m.away.abbrev || m.away.name, bar: a })
+  if (rows.length === 0) rows.push({ label: 'Any', bar: NYC_BARS.generalSoccerPubs[0] })
+  return (
+    <div className="mt-2 border-t border-slate-800 pt-2 text-[11px]">
+      <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-slate-500">📍 Watch in NYC</div>
+      <div className="flex flex-col gap-0.5">
+        {rows.map((r, i) => (
+          <a
+            key={i}
+            href={barMapUrl(r.bar)}
+            target="_blank"
+            rel="noreferrer"
+            className="text-sky-300/90 hover:text-sky-200 hover:underline"
+          >
+            <span className="font-semibold text-slate-300">{r.label}</span> → {r.bar.name}{' '}
+            <span className="text-slate-500">· {r.bar.area}</span>
+          </a>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 // Fixture card with an always-visible preview: venue, TV and what's at stake, plus
 // (for upcoming games) recent form + head-to-head from the match summary.
 function FixtureCard({ m, group, stakes, standingMap, summary }) {
@@ -464,6 +505,8 @@ function FixtureCard({ m, group, stakes, standingMap, summary }) {
       )}
 
       {(pre || live) && <OddsRow odds={summary?.odds} home={m.home} away={m.away} />}
+
+      {(pre || live) && <WatchTeaser m={m} />}
     </div>
   )
 }

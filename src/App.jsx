@@ -6,11 +6,12 @@ import GoldenBoot from './components/GoldenBoot'
 import Bracket from './components/Bracket'
 import Schedule from './components/Schedule'
 import PickEm from './components/PickEm'
+import WatchNYC from './components/WatchNYC'
 // "My Tickets" shows which matches Neil is attending + dream-matchup scenarios.
 // Public on Neil's request (note: this exposes the venues/dates he'll be at).
 const MyTickets = lazy(() => import('./components/MyTickets'))
 
-const TABS = ['Today', 'Schedule', "Pick'em", 'Groups', 'Golden Boot', 'Bracket', ...(MyTickets ? ["Neil's Tickets"] : [])]
+const TABS = ['Today', 'Schedule', "Pick'em", 'Bars', 'Groups', 'Golden Boot', 'Bracket', ...(MyTickets ? ["Neil's Tickets"] : [])]
 const REFRESH_MS = 60_000
 
 // The IANA zone + short label of the viewer's machine — every kickoff time on the
@@ -131,6 +132,7 @@ function App() {
               <Today matches={matches} groupMap={groupMap} groups={groups} news={news} />
             )}
             {tab === "Pick'em" && <PickEm matches={matches} groupMap={groupMap} />}
+            {tab === 'Bars' && <WatchNYC matches={matches} />}
             {tab === 'Groups' && <Groups groups={groups} matches={matches} />}
             {tab === 'Golden Boot' && <GoldenBoot matches={matches} />}
             {tab === 'Bracket' && <Bracket matches={matches} />}
