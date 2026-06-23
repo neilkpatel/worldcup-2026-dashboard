@@ -97,7 +97,7 @@ function App() {
                     : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
                 }`}
               >
-                {t}
+                {t === 'Bars' ? '🍻 Bars' : t}
                 {t === "Pick'em" && !pickemSeen && (
                   <span className="ml-1.5 inline-flex animate-pulse rounded-full bg-amber-400 px-1.5 py-px text-[9px] font-bold uppercase tracking-wide text-slate-900 align-[1px]">
                     New

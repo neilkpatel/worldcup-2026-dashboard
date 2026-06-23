@@ -8,6 +8,17 @@ const dateLabel = (d) => d.toLocaleDateString([], { weekday: 'long', month: 'lon
 const timeLabel = (d) => d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
 const isManhattan = (b) => b.area.includes('Manhattan')
 
+const DOWNTOWN_ZONES = [
+  'West & Greenwich Village · Hudson Square',
+  'East Village · NoHo · Bowery · LES',
+  'SoHo · Tribeca · FiDi · Seaport',
+]
+const zoneOf = (area) => {
+  if (/East Village|Alphabet|Lower East Side|Bowery|NoHo|Nolita/.test(area)) return DOWNTOWN_ZONES[1]
+  if (/SoHo|Tribeca|Financial District|Seaport|Chinatown/.test(area)) return DOWNTOWN_ZONES[2]
+  return DOWNTOWN_ZONES[0]
+}
+
 function BarCard({ bar }) {
   return (
     <div className="rounded-lg border border-slate-800 bg-slate-900/40 p-3">
@@ -22,7 +33,14 @@ function BarCard({ bar }) {
           {bar.area} ↗
         </a>
       </div>
-      <div className="mt-0.5 text-[11px] font-medium text-emerald-400/80">{bar.vibe}</div>
+      <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
+        <span className="text-[11px] font-medium text-emerald-400/80">{bar.vibe}</span>
+        {bar.watchParty && (
+          <span className="rounded-full bg-emerald-500/15 px-1.5 py-px text-[9px] font-semibold text-emerald-400">
+            🎉 watch party
+          </span>
+        )}
+      </div>
       <div className="mt-1 text-xs leading-snug text-slate-400">{bar.why}</div>
     </div>
   )
@@ -148,6 +166,34 @@ export default function WatchNYC({ matches }) {
             ))}
           </div>
         )}
+      </section>
+
+      <section>
+        <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-emerald-400/90">
+          🍻 Below 14th — your downtown turf
+        </h2>
+        <p className="mb-4 max-w-2xl text-xs text-slate-500">
+          Deep-researched, cross-referenced soccer bars south of 14th St (TVs on, 🎉 = hosts watch
+          parties), grouped by neighborhood. Tap an address for directions.
+        </p>
+        <div className="space-y-5">
+          {DOWNTOWN_ZONES.map((zone) => {
+            const bars = NYC_BARS.downtownPicks.filter((b) => zoneOf(b.area) === zone)
+            if (bars.length === 0) return null
+            return (
+              <div key={zone}>
+                <div className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                  {zone}
+                </div>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  {bars.map((b) => (
+                    <BarCard key={b.name} bar={b} />
+                  ))}
+                </div>
+              </div>
+            )
+          })}
+        </div>
       </section>
 
       <section>
