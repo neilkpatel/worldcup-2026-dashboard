@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { templateReport, matchTags } from '../reports'
 import TeamStanding from './TeamStanding'
+import FifaRank from './FifaRank'
 
 const TAG_STYLE = {
   Upset: 'bg-amber-500/20 text-amber-300',
@@ -57,6 +58,7 @@ function Side({ team, winner, standing }) {
       <span className={`text-center text-xs leading-tight ${winner ? 'font-bold text-slate-100' : 'text-slate-400'}`}>
         {team.shortName || team.name}
       </span>
+      <FifaRank abbrev={team.abbrev} className="text-[9px]" />
       {standing && <TeamStanding s={standing} />}
     </div>
   )

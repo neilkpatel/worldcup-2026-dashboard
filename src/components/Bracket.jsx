@@ -1,4 +1,5 @@
 import { venueInfo, venueLocation, venueLocalKickoff } from '../venues'
+import FifaRank from './FifaRank'
 
 const ROUND_ORDER = [
   'round-of-32',
@@ -29,6 +30,7 @@ function TeamRow({ team, state, isWinner }) {
       <span className="flex-1 truncate" title={team.name}>
         {team.name}
       </span>
+      <FifaRank abbrev={team.abbrev} className="shrink-0 text-[9px]" />
       {state !== 'pre' && (
         <span className={`tabular-nums ${isWinner ? 'font-bold' : ''}`}>{team.score}</span>
       )}

@@ -8,7 +8,7 @@ import { buildStandingMap, ordinal } from '../stats'
 import TeamStanding from './TeamStanding'
 import reports from '../data/reports.json'
 import { IRAN_WAR_STATUS } from '../data/iranWarStatus'
-import { FIFA_RANKS } from '../data/fifaRankings'
+import FifaRank from './FifaRank'
 import { NYC_BARS } from '../data/nycBars'
 
 // Google Maps search link for a bar (name + area), so we store no addresses.
@@ -204,7 +204,6 @@ function StatusPill({ m }) {
 
 function FixtureSide({ team, state, winner, standing }) {
   const dim = state === 'post' && !winner
-  const rank = FIFA_RANKS[team.abbrev]
   return (
     <div className="flex min-w-0 flex-1 flex-col items-center gap-1.5">
       <img
@@ -220,7 +219,7 @@ function FixtureSide({ team, state, winner, standing }) {
       >
         {team.shortName || team.name}
       </span>
-      {rank && <span className="text-[9px] font-semibold tracking-wide text-slate-500">FIFA #{rank}</span>}
+      <FifaRank abbrev={team.abbrev} className="text-[9px]" />
       {standing && <TeamStanding s={standing} />}
     </div>
   )

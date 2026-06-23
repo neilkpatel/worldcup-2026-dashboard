@@ -1,4 +1,5 @@
 import { buildThirdPlaceRace, buildFormMap } from '../stats'
+import FifaRank from './FifaRank'
 
 function rowAccent(rank) {
   if (rank <= 2) return 'border-l-2 border-emerald-500' // top 2 advance
@@ -47,6 +48,7 @@ function GroupCard({ group, formMap }) {
                 <div className="flex items-center gap-2">
                   <img src={team.logo} alt="" className="h-4 w-4 object-contain" loading="lazy" />
                   <span className="truncate">{team.name}</span>
+                  <FifaRank abbrev={team.abbrev} className="shrink-0 text-[9px]" />
                 </div>
               </td>
               <td className="text-center tabular-nums text-slate-400">{team.played}</td>
@@ -97,6 +99,7 @@ function ThirdPlaceRace({ groups }) {
               >
                 {t.name}
               </span>
+              <FifaRank abbrev={t.abbrev} className="shrink-0 text-[10px]" />
               <span className="shrink-0 text-xs text-slate-500">
                 GD {t.gd > 0 ? `+${t.gd}` : t.gd} · GF {t.gf}
               </span>
