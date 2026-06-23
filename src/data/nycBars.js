@@ -20,6 +20,8 @@ export const NYC_BARS = {
     { name: "Carragher's", area: 'Financial District, Manhattan', vibe: "Jamie Carragher's two-floor pub", why: 'A dependable Lower Manhattan football bar (co-owned by the Liverpool legend) showing the full World Cup slate with proper game-day pub grub.', source: 'https://www.carraghersnyc.com/' },
     { name: "McHale's Bar & Grill", area: 'Theater District, Manhattan', vibe: 'Classic Irish bar, 100-inch projector', why: 'Midtown home of Soccer Republic & the NY Celtic club; every major league + a reliable spot for any World Cup fixture, open 11am–4am.', source: 'https://www.celticbars.com/celtic-bar/mchales-bar-and-grill/' },
     { name: '11th Street Bar', area: 'East Village, Manhattan', vibe: 'Casual Irish bar, electric on matchdays', why: 'Home of OLSC New York, the oldest Liverpool supporters club in the US; opens an hour before kickoff, atmospheric for big matches.', source: 'https://www.lfcny.org/' },
+    { name: 'Fox Harlem', area: 'Harlem, Manhattan', vibe: 'Uptown sports bar, every match on', why: 'A Harlem standby showing every World Cup match across 13–16 TVs — the dependable uptown-Manhattan option.', source: 'https://www.nyctourism.com/articles/soccer-bars-in-nyc/' },
+    { name: 'One4One Sports Lounge', area: 'Lower East Side, Manhattan', vibe: 'Sports lounge airing all 104 matches', why: 'A Lower East Side lounge committed to showing all 104 World Cup matches — a downtown any-game spot.', source: 'https://www.theinfatuation.com/new-york/guides/where-to-watch-the-world-cup-nyc' },
     { name: 'Banter', area: 'Williamsburg, Brooklyn', vibe: 'Definitive Brooklyn soccer bar', why: 'Official NYCFC pub partner; opens early (7–7:30am weekends) for all soccer and treats the World Cup as the event of the century. Top non-Manhattan pick.', source: 'https://www.newyorkcityfc.com/news/pub-partner-spotlight-banter-bar' },
     { name: 'Bohemian Hall & Beer Garden', area: 'Astoria, Queens', vibe: 'Historic 1910 outdoor beer garden', why: 'Big-screen World Cup viewing outdoors with Astoria’s famously diverse crowd — a communal, deeply-rooted multinational atmosphere.', source: 'https://www.bohemianhall.com/' },
   ],
@@ -49,6 +51,7 @@ export const NYC_BARS = {
     ],
     Belgium: [
       { name: "Cafe d'Anvers", area: 'East Harlem, Manhattan', vibe: 'Belgian bistro, sidewalk frietkot', why: 'The most genuinely Belgian-owned spot in NYC, hosting weekend block parties with big screens during the tournament.', source: 'https://www.theinfatuation.com/new-york/reviews/cafe-danvers' },
+      { name: 'BXL Cafe', area: 'Theater District, Manhattan', vibe: 'Belgian beer hall since 2004', why: 'A long-running authentic Belgian cafe — moules-frites and a deep Trappist/Lambic draft list, very central for Belgium fans.', source: 'https://bxlcafe.com/' },
     ],
     Croatia: [
       { name: 'Rudar Club', area: 'Astoria, Queens', vibe: "Croatian/Istrian social club (since '70s)", why: 'An actual Croatian supporters club, not a themed bar — a genuine community scene on national-team match days. Arrive early.', source: 'https://www.theinfatuation.com/new-york/reviews/rudar-club' },
@@ -75,6 +78,7 @@ export const NYC_BARS = {
     ],
     Mexico: [
       { name: 'Animo!', area: 'Midtown East, Manhattan', vibe: 'Authentic Mexican restaurant, giant-screen El Tri parties', why: 'Hosts El Tri viewing parties on a giant screen with full sound — the strongest Manhattan Mexico option.', source: 'https://www.nyctourism.com/restaurants/animo/' },
+      { name: 'Los Mariscos', area: 'Chelsea Market, Manhattan', vibe: 'Open-air-feel taqueria with soccer on', why: 'A Chelsea Market taqueria that feels like an open-air spot in Mexico — grab a michelada and catch El Tri. Casual Manhattan walk-in.', source: 'https://www.theinfatuation.com/new-york/reviews/los-mariscos' },
       { name: 'Roosevelt Ave taquerias', area: 'Corona, Queens', vibe: 'Heart of Mexican New York', why: 'The Roosevelt Ave corridor packs Mexican bars that erupt for every Mexico match — the deepest community scene.', source: 'https://www.theinfatuation.com/new-york/guides/where-to-watch-the-world-cup-nyc' },
     ],
     Argentina: [

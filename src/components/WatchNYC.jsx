@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { NYC_BARS } from '../data/nycBars'
 
 const barMapUrl = (b) =>
@@ -5,6 +6,7 @@ const barMapUrl = (b) =>
 const dayKey = (d) => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`
 const dateLabel = (d) => d.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' })
 const timeLabel = (d) => d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+const isManhattan = (b) => b.area.includes('Manhattan')
 
 function BarCard({ bar }) {
   return (
@@ -26,6 +28,82 @@ function BarCard({ bar }) {
   )
 }
 
+// Two-column "[Team] fans" grid of bar cards.
+function TeamColumns({ groups }) {
+  return (
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+      {groups.map((g) => (
+        <div key={g.country}>
+          <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-400/80">
+            {g.country} fans
+          </div>
+          <div className="space-y-2">
+            {g.bars.map((b) => (
+              <BarCard key={b.name} bar={b} />
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function GameBars({ m }) {
+  const [showOuter, setShowOuter] = useState(false)
+
+  const split = (filter) =>
+    [m.home, m.away]
+      .map((side) => ({ country: side.name, bars: (NYC_BARS.byCountry[side.name] || []).filter(filter) }))
+      .filter((g) => g.bars.length > 0)
+
+  const manhattan = split(isManhattan)
+  const outer = split((b) => !isManhattan(b))
+  const outerCount = outer.reduce((n, g) => n + g.bars.length, 0)
+
+  return (
+    <div className="rounded-xl border border-slate-800 p-4">
+      <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-100">
+        {m.home.logo && <img src={m.home.logo} alt="" className="h-5 w-5 object-contain" />}
+        {m.home.name} <span className="text-slate-500">v</span> {m.away.name}
+        {m.away.logo && <img src={m.away.logo} alt="" className="h-5 w-5 object-contain" />}
+        <span className="ml-auto text-xs font-normal text-slate-500">{timeLabel(m.date)}</span>
+      </div>
+
+      {manhattan.length > 0 ? (
+        <TeamColumns groups={manhattan} />
+      ) : (
+        <p className="text-xs text-slate-500">
+          No team-specific Manhattan spot for these two — grab any soccer pub below (all properly
+          Manhattan, naturally). {outerCount > 0 && 'Or slum it in the boroughs 👇'}
+        </p>
+      )}
+
+      {outerCount > 0 && (
+        <div className="mt-3 border-t border-slate-800/70 pt-3">
+          <button
+            type="button"
+            onClick={() => setShowOuter((v) => !v)}
+            aria-expanded={showOuter}
+            className="flex w-full items-center gap-1.5 text-[11px] font-semibold text-slate-400 hover:text-slate-200"
+          >
+            🌉 If you simply must leave Manhattan
+            <span className="rounded-full bg-slate-800 px-1.5 py-px text-[9px] text-slate-500">{outerCount}</span>
+            <span className={`ml-auto transition-transform ${showOuter ? 'rotate-180' : ''}`}>▾</span>
+          </button>
+          {showOuter && (
+            <div className="mt-2">
+              <p className="mb-2 text-[10px] italic text-slate-600">
+                The outer boroughs — and, heaven forfend, New Jersey. We won't tell anyone. (We will.)
+              </p>
+              <TeamColumns groups={outer} />
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function WatchNYC({ matches }) {
   const now = new Date()
   const real = (m) => m.home.abbrev && m.away.abbrev
@@ -43,25 +121,19 @@ export default function WatchNYC({ matches }) {
   }
   games = [...games].sort((a, b) => a.date - b.date)
 
-  const spotsFor = (m) => {
-    const out = []
-    for (const side of [m.home, m.away]) {
-      const list = NYC_BARS.byCountry[side.name]
-      if (list?.length) out.push({ country: side.name, bars: list })
-    }
-    return out
-  }
+  const manhattanPubs = NYC_BARS.generalSoccerPubs.filter(isManhattan)
+  const outerPubs = NYC_BARS.generalSoccerPubs.filter((b) => !isManhattan(b))
 
   return (
     <div className="space-y-8">
       <section>
         <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-slate-400">
-          🍺 Where to watch in NYC
+          🍸 Where to watch in NYC
         </h2>
         <p className="mb-4 max-w-2xl text-xs text-slate-500">
-          Hand-researched watch-party spots for each match — supporters'-club home bars and real
-          fan-scene venues, Manhattan-first but expanding to the boroughs where a team's crowd
-          actually gathers. Tap an address for directions.
+          Hand-researched watch-party spots per match — supporters'-club home bars and real fan-scene
+          venues. We lead with <span className="text-slate-300">Manhattan</span>, as is only proper;
+          anything requiring a bridge or tunnel is filed discreetly below. Tap an address for directions.
         </p>
 
         <div className="mb-2 text-xs font-semibold text-slate-300">{heading}</div>
@@ -71,53 +143,36 @@ export default function WatchNYC({ matches }) {
           </p>
         ) : (
           <div className="space-y-4">
-            {games.map((m) => {
-              const spots = spotsFor(m)
-              return (
-                <div key={m.id} className="rounded-xl border border-slate-800 p-4">
-                  <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-100">
-                    {m.home.logo && <img src={m.home.logo} alt="" className="h-5 w-5 object-contain" />}
-                    {m.home.name} <span className="text-slate-500">v</span> {m.away.name}
-                    {m.away.logo && <img src={m.away.logo} alt="" className="h-5 w-5 object-contain" />}
-                    <span className="ml-auto text-xs font-normal text-slate-500">{timeLabel(m.date)}</span>
-                  </div>
-                  {spots.length > 0 ? (
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                      {spots.map((s) => (
-                        <div key={s.country}>
-                          <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-400/80">
-                            {s.country} fans
-                          </div>
-                          <div className="space-y-2">
-                            {s.bars.map((b) => (
-                              <BarCard key={b.name} bar={b} />
-                            ))}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-xs text-slate-500">
-                      No country-specific bar for these teams — any soccer pub below works great.
-                    </p>
-                  )}
-                </div>
-              )
-            })}
+            {games.map((m) => (
+              <GameBars key={m.id} m={m} />
+            ))}
           </div>
         )}
       </section>
 
       <section>
         <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-slate-400">
-          ⚽ Always a good bet — NYC soccer pubs
+          ⚽ Always a good bet — Manhattan soccer pubs
         </h2>
         <p className="mb-3 text-xs text-slate-500">These show every match, whoever's playing.</p>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {NYC_BARS.generalSoccerPubs.map((b) => (
+          {manhattanPubs.map((b) => (
             <BarCard key={b.name} bar={b} />
           ))}
         </div>
+
+        {outerPubs.length > 0 && (
+          <details className="mt-3 rounded-xl border border-slate-800/70 px-4 py-2">
+            <summary className="cursor-pointer list-none text-[11px] font-semibold text-slate-400 hover:text-slate-200">
+              🌉 Two outer-borough exceptions we'll grudgingly allow
+            </summary>
+            <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {outerPubs.map((b) => (
+                <BarCard key={b.name} bar={b} />
+              ))}
+            </div>
+          </details>
+        )}
       </section>
     </div>
   )

@@ -369,7 +369,8 @@ function OddsRow({ odds, home, away }) {
 function WatchTeaser({ m }) {
   const top = (name) => {
     const list = NYC_BARS.byCountry[name]
-    return list && list.length ? list[0] : null
+    if (!list || !list.length) return null
+    return list.find((b) => b.area.includes('Manhattan')) || list[0]
   }
   const rows = []
   const h = top(m.home.name)
