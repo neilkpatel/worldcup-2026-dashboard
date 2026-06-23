@@ -209,6 +209,26 @@ export async function fetchMatchSummary(eventId) {
     }
   }
 
+  // Betting odds — 3-way moneyline (+ total goals) from the pickcenter book. Prefer
+  // live odds when the book has them open, else the pre-match close price.
+  // Informational only — we deliberately don't surface the sportsbook bet links.
+  let odds = null
+  const book = (d.pickcenter ?? []).find((p) => p.moneyline)
+  if (book?.moneyline) {
+    const price = (side) => {
+      const o = book.moneyline[side]
+      const live = o?.live?.odds
+      return live && live !== 'OFF' ? live : (o?.close?.odds ?? null)
+    }
+    odds = {
+      provider: book.provider?.name ?? null,
+      home: price('home'),
+      draw: price('draw'),
+      away: price('away'),
+      total: book.overUnder ?? null,
+    }
+  }
+
   return {
     headline: d.article?.headline ?? null,
     story: htmlToText(d.article?.story), // ESPN's own written match report
@@ -217,6 +237,7 @@ export async function fetchMatchSummary(eventId) {
     stats,
     form,
     h2h,
+    odds,
   }
 }
 

@@ -330,6 +330,32 @@ function LiveStats({ stats }) {
   )
 }
 
+// 3-way moneyline (+ total goals) from ESPN's pickcenter book. Informational —
+// shows the prices and the provider, no bet links.
+function OddsRow({ odds, home, away }) {
+  if (!odds || (!odds.home && !odds.draw && !odds.away)) return null
+  const cell = (label, val) => (
+    <span className="flex items-baseline gap-1">
+      <span className="text-slate-500">{label}</span>
+      <span className="font-semibold tabular-nums text-slate-200">{val ?? '–'}</span>
+    </span>
+  )
+  return (
+    <div className="mt-2 border-t border-slate-800 pt-2 text-[11px]">
+      <div className="mb-1 flex items-center justify-between text-[10px] uppercase tracking-wide text-slate-500">
+        <span>💰 Moneyline</span>
+        {odds.provider && <span className="normal-case">{odds.provider}</span>}
+      </div>
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-slate-400">
+        {cell(home.abbrev || 'Home', odds.home)}
+        {cell('Draw', odds.draw)}
+        {cell(away.abbrev || 'Away', odds.away)}
+        {odds.total != null && cell('O/U', odds.total)}
+      </div>
+    </div>
+  )
+}
+
 // Fixture card with an always-visible preview: venue, TV and what's at stake, plus
 // (for upcoming games) recent form + head-to-head from the match summary.
 function FixtureCard({ m, group, stakes, standingMap, summary }) {
@@ -435,6 +461,8 @@ function FixtureCard({ m, group, stakes, standingMap, summary }) {
           )}
         </div>
       )}
+
+      {(pre || live) && <OddsRow odds={summary?.odds} home={m.home} away={m.away} />}
     </div>
   )
 }
