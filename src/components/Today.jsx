@@ -232,8 +232,7 @@ function FormChips({ label, games }) {
     <div className="flex items-center gap-1">
       <span className="w-9 shrink-0 font-semibold text-slate-400">{label}</span>
       {games
-        .slice(0, 5)
-        .reverse()
+        .slice(-5)
         .map((g, i) => (
           <span
             key={i}
