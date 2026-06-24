@@ -107,7 +107,10 @@ function App() {
             ))}
           </nav>
           <div className="ml-auto text-right text-xs text-slate-500">
-            <div>🕐 Times in {TZ_NAME} ({TZ_SHORT})</div>
+            <div>
+              🕐 <span className="sm:hidden">{TZ_SHORT}</span>
+              <span className="hidden sm:inline">Times in {TZ_NAME} ({TZ_SHORT})</span>
+            </div>
             {updatedAt && (
               <div>
                 Updated{' '}

@@ -362,6 +362,10 @@ function OddsRow({ odds, home, away }) {
   )
 }
 
+// Manual overrides for the daily bar pick, keyed by local date (YYYY-M-D, month
+// 0-indexed) — Neil sets these via chat. Unlisted days use the rotation below.
+const BAR_OF_DAY_OVERRIDES = { '2026-5-24': 'slainte' }
+
 // "Today's bar" callout for the top of the Today tab. Picks one spot from the
 // below-28th-St (downtown) set, deterministically by date so it stays put all day
 // and rotates at midnight (not on every 60s data refresh). Full planner = Bars tab.
@@ -372,7 +376,8 @@ function BarOfTheDay() {
   const key = `${now.getFullYear()}-${now.getMonth()}-${now.getDate()}`
   let h = 0
   for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) | 0
-  const bar = downtown[Math.abs(h) % downtown.length]
+  const override = BAR_OF_DAY_OVERRIDES[key]
+  const bar = (override && downtown.find((b) => b.id === override)) || downtown[Math.abs(h) % downtown.length]
   return (
     <section className="mb-8">
       <div className="rounded-2xl border border-emerald-700/40 bg-gradient-to-br from-emerald-950/30 to-slate-900/40 p-4">
