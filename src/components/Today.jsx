@@ -9,10 +9,10 @@ import TeamStanding from './TeamStanding'
 import reports from '../data/reports.json'
 import { IRAN_WAR_STATUS } from '../data/iranWarStatus'
 import FifaRank from './FifaRank'
-import { NYC_BARS } from '../data/nycBars'
+import { WATCH_BARS, zoneOf } from '../data/watchBars'
 
 // Google Maps search link for a bar (name + area), so we store no addresses.
-const barMapUrl = (b) => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${b.name} ${b.area}`)}`
+const barMapUrl = (b) => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${b.name} ${b.area} New York`)}`
 
 // Lazily fetch per-match recap detail (scorers, stats, headline) for a set of
 // finished matches. Returns { [id]: summary }. Best-effort per match so one bad
@@ -362,38 +362,40 @@ function OddsRow({ odds, home, away }) {
   )
 }
 
-// Compact "watch in NYC" teaser on a fixture card: top nationality spot per team
-// if we have one, else a reliable general pub. The full planner is the Bars tab.
-function WatchTeaser({ m }) {
-  const top = (name) => {
-    const list = NYC_BARS.byCountry[name]
-    if (!list || !list.length) return null
-    return list.find((b) => b.area.includes('Manhattan')) || list[0]
-  }
-  const rows = []
-  const h = top(m.home.name)
-  const a = top(m.away.name)
-  if (h) rows.push({ label: m.home.abbrev || m.home.name, bar: h })
-  if (a) rows.push({ label: m.away.abbrev || m.away.name, bar: a })
-  if (rows.length === 0) rows.push({ label: 'Any', bar: NYC_BARS.generalSoccerPubs[0] })
+// "Today's bar" callout for the top of the Today tab. Picks one spot from the
+// below-28th-St (downtown) set, deterministically by date so it stays put all day
+// and rotates at midnight (not on every 60s data refresh). Full planner = Bars tab.
+function BarOfTheDay() {
+  const downtown = WATCH_BARS.filter((b) => zoneOf(b.area) === 'downtown')
+  if (downtown.length === 0) return null
+  const now = new Date()
+  const key = `${now.getFullYear()}-${now.getMonth()}-${now.getDate()}`
+  let h = 0
+  for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) | 0
+  const bar = downtown[Math.abs(h) % downtown.length]
   return (
-    <div className="mt-2 border-t border-slate-800 pt-2 text-[11px]">
-      <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-slate-500">📍 Watch in NYC</div>
-      <div className="flex flex-col gap-0.5">
-        {rows.map((r, i) => (
+    <section className="mb-8">
+      <div className="rounded-2xl border border-emerald-700/40 bg-gradient-to-br from-emerald-950/30 to-slate-900/40 p-4">
+        <div className="text-[10px] font-semibold uppercase tracking-wide text-emerald-400/80">
+          🍻 Today's bar pick
+        </div>
+        <div className="mt-1 flex flex-wrap items-baseline gap-x-2">
           <a
-            key={i}
-            href={barMapUrl(r.bar)}
+            href={barMapUrl(bar)}
             target="_blank"
             rel="noreferrer"
-            className="text-sky-300/90 hover:text-sky-200 hover:underline"
+            className="text-lg font-bold text-slate-100 hover:text-emerald-300"
           >
-            <span className="font-semibold text-slate-300">{r.label}</span> → {r.bar.name}{' '}
-            <span className="text-slate-500">· {r.bar.area}</span>
+            {bar.name}
           </a>
-        ))}
+          <span className="text-xs text-slate-500">· {bar.area}</span>
+        </div>
+        <p className="mt-1 text-sm text-slate-400">{bar.blurb}</p>
+        <div className="mt-2 text-[11px] text-slate-500">
+          Rotating pick from the spots below 28th St — see them all in the 🍻 Bars tab.
+        </div>
       </div>
-    </div>
+    </section>
   )
 }
 
@@ -495,8 +497,6 @@ function FixtureCard({ m, group, standingMap, summary }) {
       )}
 
       {(pre || live) && <OddsRow odds={summary?.odds} home={m.home} away={m.away} />}
-
-      {(pre || live) && <WatchTeaser m={m} />}
     </div>
   )
 }
@@ -577,6 +577,44 @@ function WarStatus() {
               className="text-sky-300/90 underline hover:text-sky-200"
             >
               live coverage →
+            </a>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// Single-serving flavor popout for the Norway Following row: the viral Viking
+// "Ro!" (row) chant. Sourced; mirrors the Iran war-status popout pattern.
+function NorwayChant() {
+  const [open, setOpen] = useState(false)
+  return (
+    <div className="mt-3 border-t border-emerald-800/30 pt-3">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        className="flex w-full items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-400/80"
+      >
+        🚣 The Viking "Ro!" chant
+        <span className={`ml-auto transition-transform ${open ? 'rotate-180' : ''}`}>▾</span>
+      </button>
+      {open && (
+        <div className="mt-2 rounded-lg border border-emerald-600/30 bg-emerald-950/20 p-3 text-xs leading-snug text-slate-300">
+          Norway's first World Cup in 28 years comes with the tournament's coolest terrace moment:
+          thousands of fans chant <span className="font-semibold text-slate-100">"Ro!"</span> — Norwegian
+          for <span className="italic">row</span> — rocking in unison to a drumbeat like a Viking longship
+          crew, capped with a deep <span className="font-semibold text-slate-100">"HUH!"</span>. Created by
+          the official supporters' club Oljeberget to make a statement at the 2026 finals.
+          <div className="mt-2 text-[10px] text-slate-500">
+            <a
+              href="https://sports.yahoo.com/articles/norways-soccer-chant-explained-history-100001580.html"
+              target="_blank"
+              rel="noreferrer"
+              className="text-sky-300/90 underline hover:text-sky-200"
+            >
+              the story behind it →
             </a>
           </div>
         </div>
@@ -738,6 +776,7 @@ function FollowedTeam({ abbrev, matches, groups }) {
             </div>
           )}
           {abbrev === 'IRN' && <WarStatus />}
+          {abbrev === 'NOR' && <NorwayChant />}
         </div>
       )}
     </div>
@@ -803,8 +842,11 @@ export default function Today({ matches, groupMap, groups, news = [] }) {
 
   return (
     <div>
-      {/* ── Followed teams, pinned (USA, then Iran) — compact collapsible rows ── */}
-      <FollowingPanel abbrevs={['USA', 'IRN']} matches={matches} groups={groups} />
+      {/* ── Today's rotating bar pick (links to the full Bars tab) ── */}
+      <BarOfTheDay />
+
+      {/* ── Followed teams, pinned (USA, Iran, Norway) — compact collapsible rows ── */}
+      <FollowingPanel abbrevs={['USA', 'IRN', 'NOR']} matches={matches} groups={groups} />
 
       {/* ── Today's fixtures (or the next slate on off-days) ── */}
       {todayMatches.length > 0 ? (
