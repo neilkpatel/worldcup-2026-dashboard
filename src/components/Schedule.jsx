@@ -11,14 +11,15 @@ export default function Schedule({ matches, groupMap, groups }) {
   // Default to upcoming so the tab opens on what's next, not finished games.
   const [view, setView] = useState('upcoming')
 
-  // Distinct real team names (skip knockout placeholders), for search autocomplete.
+  // Distinct real team names for search autocomplete — skip knockout placeholders
+  // ("Semifinal 1 Winner", "Group A Runner-up", etc.) so only actual nations show.
   const teamOptions = useMemo(
     () =>
       [
         ...new Set(
           matches
             .flatMap((m) => [m.home, m.away])
-            .filter((t) => t.abbrev)
+            .filter((t) => t.abbrev && !/winner|loser|runner|\btbd\b/i.test(t.name))
             .map((t) => t.name),
         ),
       ].sort((a, b) => a.localeCompare(b)),

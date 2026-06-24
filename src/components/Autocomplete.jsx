@@ -33,7 +33,10 @@ export default function Autocomplete({ value, onChange, options, placeholder, ic
       <input
         type="search"
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={(e) => {
+          onChange(e.target.value)
+          setOpen(true) // reopen on every keystroke, so you can search again after picking
+        }}
         onFocus={() => setOpen(true)}
         onBlur={() => setTimeout(() => setOpen(false), 120)}
         placeholder={placeholder}

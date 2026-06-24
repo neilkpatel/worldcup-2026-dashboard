@@ -9,6 +9,7 @@ import TeamStanding from './TeamStanding'
 import reports from '../data/reports.json'
 import { IRAN_WAR_STATUS } from '../data/iranWarStatus'
 import FifaRank from './FifaRank'
+import WhatsNew from './WhatsNew'
 
 // Lazily fetch per-match recap detail (scorers, stats, headline) for a set of
 // finished matches. Returns { [id]: summary }. Best-effort per match so one bad
@@ -800,6 +801,9 @@ export default function Today({ matches, groupMap, groups, news = [] }) {
 
   return (
     <div>
+      {/* ── Transient "what's new" toast (once per device, auto-dismisses) ── */}
+      <WhatsNew />
+
       {/* ── Followed teams, pinned (USA, Iran, Norway) — compact collapsible rows ── */}
       <FollowingPanel abbrevs={['USA', 'IRN', 'NOR']} matches={matches} groups={groups} />
 
