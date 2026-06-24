@@ -107,6 +107,49 @@ Runs locally at http://localhost:5173 via `npm run dev`.
   `POST https://api.supabase.com/v1/projects/hufgsqlyaolefwhtvbub/database/query`
   with the personal access token (in global CLAUDE.md), same pattern as sup-app.
 
+## Live game view (Today tab fixture cards)
+All from the free ESPN data already fetched — no keys, no cost. In `Today.jsx`:
+- **EventTimeline** — goals + cards (who/minute/team) from the scoreboard
+  `m.details` (refreshes every 60s, so live games fill in). Newest event is
+  spotlighted on live games ("latest action").
+- **LiveStats** — possession/shots/on-target/corners dual bars from the summary
+  `stats`. `useMatchSummaries` refetches a live game when its clock/score ticks.
+- **Goal celebration** — combined score ticking up flashes the card (`goal-flash`)
+  + pops a "⚽ GOAL!" banner (`goal-pop`, keyframes in `index.css`). Detected via
+  the previous-value render pattern, cleared by a timer.
+- **OddsRow** — 3-way moneyline + O/U from ESPN `pickcenter` (parsed in
+  `api.js`), prefers live price else close. Informational, no bet links.
+- **`useLiveClock`** ticks the minute locally between refreshes; HT/FT styling
+  from `m.statusDetail`.
+
+## FIFA rankings (`src/data/fifaRankings.js`)
+- `FIFA_RANKS` = abbrev→rank map, official **11 Jun 2026** release (stable through
+  the tournament; FIFA only re-ranks after). UPDATE after the next release if
+  wanted. ESPN does NOT carry FIFA rank — this is our own verified snapshot.
+- `<FifaRank abbrev={...} />` (`src/components/FifaRank.jsx`) renders a subtle,
+  **parenthesized, unbolded** `(FIFA #N)` next to the team name. Used EVERYWHERE a
+  team is listed (Today, Schedule/MatchCard, Groups + 3rd-place, Bracket,
+  ResultCard). In horizontal rows, wrap name+chip together so it hugs the name.
+
+## "Bars" tab — Where to watch in NYC (`WatchNYC.jsx` + `src/data/nycBars.js`)
+- Data is **curated + web-cross-referenced (≥2 sources each), verified real +
+  currently open. NEVER hallucinate or pad with made-up/closed venues** — research
+  and verify (closed spots like Nevada Smith's were deliberately excluded).
+- `byCountry` keyed by ESPN displayName; `generalSoccerPubs` = any-game fallback;
+  `downtownPicks` = deep **south-of-14th** set grouped by zone (each has
+  `watchParty` → "🎉 watch party" badge). Map links built from name + area.
+- **Conventions:** Manhattan-led per game; non-Manhattan spots collapse into a
+  tongue-in-cheek **"🌉 If you simply must leave Manhattan"** box (keep the snobby
+  Manhattan-elitist tone). Nav tab shows a celebratory **🍻 Bars** (special-cased
+  in `App.jsx`). Card teaser (`WatchTeaser` in Today.jsx) prefers a Manhattan spot.
+
+## Iran war status (`src/data/iranWarStatus.js`)
+- `WarStatus` in the Iran followed-team popout: a single-serving "Is the war with
+  Iran over?" with THREE honest states (`over`/`active`/`ceasefire`), sourced +
+  dated, with an always-current live-coverage link. **Do not let the app assert a
+  flat yes/no** — currently `ceasefire`. Update `state`/`asOf` manually as the
+  real situation changes (it can't auto-update).
+
 ## Tournament format (48 teams, new in 2026)
 - 12 groups of 4; top 2 per group + 8 best third-place teams → round of 32
 - Group stage June 11–27; final July 19 at MetLife Stadium
@@ -126,4 +169,7 @@ Runs locally at http://localhost:5173 via `npm run dev`.
 - `src/components/Bracket.jsx` — knockout bracket R32→final + 3rd-place match;
   reads `match.round` (ESPN season slug), fills slots as teams qualify
 - `src/components/Schedule.jsx` — full schedule grouped by day, team filter
+- `src/components/FifaRank.jsx` + `src/data/fifaRankings.js` — FIFA rank chip (see above)
+- `src/components/WatchNYC.jsx` + `src/data/nycBars.js` — "Bars" tab (see above)
+- `src/data/iranWarStatus.js` — Iran war-status indicator data (see above)
 - `src/stakes.js` — matchday-aware qualification implications (conservative math)
