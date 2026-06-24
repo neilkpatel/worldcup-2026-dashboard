@@ -3,7 +3,7 @@ import ResultCard from './ResultCard'
 import Explainer from './Explainer'
 import { lastCompletedDay } from '../recap'
 import { fetchMatchSummary, fetchTeamNews } from '../api'
-import { matchStakes, MARQUEE } from '../stakes'
+import { MARQUEE } from '../stakes'
 import { buildStandingMap, ordinal } from '../stats'
 import TeamStanding from './TeamStanding'
 import reports from '../data/reports.json'
@@ -400,17 +400,15 @@ function WatchTeaser({ m }) {
 
 // Fixture card with an always-visible preview: venue, TV and what's at stake, plus
 // (for upcoming games) recent form + head-to-head from the match summary.
-function FixtureCard({ m, group, stakes, standingMap, summary }) {
+function FixtureCard({ m, group, standingMap, summary }) {
   const pre = m.state === 'pre'
   const live = m.state === 'in'
   const upset = upsetKind(m)
   const showStanding = m.round === 'group-stage'
   const where = [m.venue, m.city].filter(Boolean).join(', ')
   const form = summary?.form
-  const h2h = summary?.h2h
-  const showStake = stakes && m.state !== 'post'
   const hasForm = pre && form && (form[m.home.id] || form[m.away.id])
-  const hasPreview = where || m.tv || showStake || hasForm || (pre && h2h)
+  const hasPreview = where || m.tv || hasForm
 
   // Goal celebration: when the combined score ticks up on a live game, flash the
   // card + pop a GOAL! banner. Detect during render (previous-value pattern);
@@ -487,18 +485,11 @@ function FixtureCard({ m, group, stakes, standingMap, summary }) {
         <div className="mt-2 space-y-1 border-t border-slate-800 pt-2 text-[11px] text-slate-400">
           {where && <div>📍 {where}</div>}
           {m.tv && <div>📺 {m.tv}</div>}
-          {showStake && <div className="text-slate-300">🎯 {stakes.text}</div>}
           {hasForm && (
             <div className="space-y-0.5 pt-0.5">
               <div className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Recent form</div>
               <FormChips label={m.home.abbrev} games={form[m.home.id]} />
               <FormChips label={m.away.abbrev} games={form[m.away.id]} />
-            </div>
-          )}
-          {pre && h2h && (
-            <div>
-              🤝 {h2h.count === 1 ? 'Last meeting' : `Last of ${h2h.count} meetings`}: {h2h.lastScore}
-              {h2h.lastYear ? ` (${h2h.lastYear})` : ''}
             </div>
           )}
         </div>
@@ -515,7 +506,7 @@ function FixtureCard({ m, group, stakes, standingMap, summary }) {
 const STATE_RANK = { in: 0, pre: 1, post: 2 }
 const byWatchOrder = (a, b) => STATE_RANK[a.state] - STATE_RANK[b.state] || a.date - b.date
 
-function Scores({ title, matches, groupMap, groups, standingMap, highlight = false }) {
+function Scores({ title, matches, groupMap, standingMap, highlight = false }) {
   // Pull summaries for upcoming games so each card can show form + head-to-head
   // (keyed by match-id set, so it only refetches when the slate changes).
   const summaries = useMatchSummaries(matches.filter((m) => m.state === 'pre' || m.state === 'in'))
@@ -524,7 +515,7 @@ function Scores({ title, matches, groupMap, groups, standingMap, highlight = fal
   const grid = (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
       {ordered.map((m) => (
-        <FixtureCard key={m.id} m={m} group={groupMap[m.home.id]} stakes={matchStakes(m, groups)} standingMap={standingMap} summary={summaries[m.id]} />
+        <FixtureCard key={m.id} m={m} group={groupMap[m.home.id]} standingMap={standingMap} summary={summaries[m.id]} />
       ))}
     </div>
   )
@@ -822,7 +813,6 @@ export default function Today({ matches, groupMap, groups, news = [] }) {
           title={`⚽ Today · ${dateLabel(now)}`}
           matches={todayMatches}
           groupMap={groupMap}
-          groups={groups}
           standingMap={standingMap}
           highlight
         />
@@ -831,7 +821,6 @@ export default function Today({ matches, groupMap, groups, news = [] }) {
           title={`⏭ Next up · ${nextLabel}`}
           matches={nextDayMatches}
           groupMap={groupMap}
-          groups={groups}
           standingMap={standingMap}
         />
       ) : null}
