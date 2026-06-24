@@ -208,14 +208,16 @@ function FixtureSide({ team, state, winner, standing }) {
         loading="lazy"
         className={`h-9 w-9 object-contain transition-transform group-hover:scale-110 ${dim ? 'opacity-50' : ''}`}
       />
-      <span
-        className={`text-center text-xs leading-tight ${
-          winner ? 'font-bold text-slate-100' : dim ? 'text-slate-500' : 'text-slate-200'
-        }`}
-      >
-        {team.shortName || team.name}
-      </span>
-      <FifaRank abbrev={team.abbrev} className="text-[9px]" />
+      <div className="flex flex-wrap items-baseline justify-center gap-x-1">
+        <span
+          className={`text-center text-xs leading-tight ${
+            winner ? 'font-bold text-slate-100' : dim ? 'text-slate-500' : 'text-slate-200'
+          }`}
+        >
+          {team.shortName || team.name}
+        </span>
+        <FifaRank abbrev={team.abbrev} bare className="text-[10px]" />
+      </div>
       {standing && <TeamStanding s={standing} />}
     </div>
   )
