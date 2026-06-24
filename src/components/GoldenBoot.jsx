@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react'
 import { buildScorers } from '../stats'
 import { buildTeamLookup } from '../api'
+import Autocomplete from './Autocomplete'
+import DismissibleTip from './DismissibleTip'
 
 // Accent-insensitive search so "jimenez" finds "Jiménez", "krejci" finds "Krejcí".
 const norm = (s) => (s || '').normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase()
@@ -35,6 +37,7 @@ function GoalBreakdown({ goalsList }) {
 export default function GoldenBoot({ matches }) {
   const teamLookup = useMemo(() => buildTeamLookup(matches), [matches])
   const scorers = useMemo(() => buildScorers(matches, teamLookup), [matches, teamLookup])
+  const playerOptions = useMemo(() => [...new Set(scorers.map((s) => s.name))], [scorers])
   const [query, setQuery] = useState('')
   const [openKey, setOpenKey] = useState(null)
 
@@ -62,14 +65,18 @@ export default function GoldenBoot({ matches }) {
         </p>
       </div>
 
-      <div className="relative mb-3">
-        <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">🔍</span>
-        <input
-          type="search"
+      <DismissibleTip id="player-search">
+        Search for <span className="font-semibold">any player</span> to see exactly which games they
+        scored in — just start typing a name. ⚽
+      </DismissibleTip>
+      <div className="mb-3">
+        <Autocomplete
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search a player (e.g. Messi, Jiménez) or country…"
-          className="w-full rounded-lg border border-slate-700 bg-slate-900 py-2.5 pl-9 pr-3 text-sm text-slate-100 placeholder:text-slate-600 focus:border-emerald-500 focus:outline-none"
+          onChange={setQuery}
+          options={playerOptions}
+          placeholder="Search a player (e.g. Messi, Jiménez)…"
+          icon="🔍"
+          ariaLabel="Search players"
         />
       </div>
 

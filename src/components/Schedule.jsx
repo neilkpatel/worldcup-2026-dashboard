@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react'
 import MatchCard from './MatchCard'
+import Autocomplete from './Autocomplete'
+import DismissibleTip from './DismissibleTip'
 import { matchStakes } from '../stakes'
 
 const VIEWS = ['upcoming', 'completed', 'all']
@@ -8,6 +10,20 @@ export default function Schedule({ matches, groupMap, groups }) {
   const [filter, setFilter] = useState('')
   // Default to upcoming so the tab opens on what's next, not finished games.
   const [view, setView] = useState('upcoming')
+
+  // Distinct real team names (skip knockout placeholders), for search autocomplete.
+  const teamOptions = useMemo(
+    () =>
+      [
+        ...new Set(
+          matches
+            .flatMap((m) => [m.home, m.away])
+            .filter((t) => t.abbrev)
+            .map((t) => t.name),
+        ),
+      ].sort((a, b) => a.localeCompare(b)),
+    [matches],
+  )
 
   const filtered = useMemo(() => {
     const q = filter.trim().toLowerCase()
@@ -41,6 +57,10 @@ export default function Schedule({ matches, groupMap, groups }) {
 
   return (
     <div>
+      <DismissibleTip id="schedule-search">
+        Search the schedule for your <span className="font-semibold">favorite team</span> — just start
+        typing a name (try “U”) and pick it from the list. ⚽
+      </DismissibleTip>
       <div className="mb-6 flex flex-wrap items-center gap-3">
         <div className="inline-flex rounded-lg border border-slate-800 bg-slate-900 p-0.5 text-sm">
           {VIEWS.map((v) => (
@@ -55,13 +75,15 @@ export default function Schedule({ matches, groupMap, groups }) {
             </button>
           ))}
         </div>
-        <input
-          type="text"
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-          placeholder="Filter by team — e.g. United States"
-          className="w-full rounded-lg border border-slate-800 bg-slate-900 px-4 py-2 text-sm placeholder-slate-600 focus:border-emerald-600 focus:outline-none sm:max-w-xs"
-        />
+        <div className="w-full sm:max-w-xs">
+          <Autocomplete
+            value={filter}
+            onChange={setFilter}
+            options={teamOptions}
+            placeholder="Filter by team — e.g. United States"
+            ariaLabel="Filter schedule by team"
+          />
+        </div>
       </div>
       {byDay.map((day) => (
         <section key={day.key} className="mb-8">
