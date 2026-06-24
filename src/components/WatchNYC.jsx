@@ -15,6 +15,41 @@ const TV = {
 
 const tagList = (s) => s.split('·').map((t) => t.trim()).filter(Boolean)
 
+// Manual overrides for the daily bar pick, keyed by local date (YYYY-M-D, month
+// 0-indexed) — Neil sets these via chat. Unlisted days use the rotation below.
+const BAR_OF_DAY_OVERRIDES = { '2026-5-24': 'slainte' }
+
+// "Today's pick" highlight at the top of the Bars tab — one spot from the
+// below-28th-St set, deterministic by date (stays put all day, rotates at midnight).
+function BarOfTheDay() {
+  const downtown = WATCH_BARS.filter((b) => zoneOf(b.area) === 'downtown')
+  if (downtown.length === 0) return null
+  const now = new Date()
+  const key = `${now.getFullYear()}-${now.getMonth()}-${now.getDate()}`
+  let h = 0
+  for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) | 0
+  const override = BAR_OF_DAY_OVERRIDES[key]
+  const bar = (override && downtown.find((b) => b.id === override)) || downtown[Math.abs(h) % downtown.length]
+  return (
+    <div className="rounded-2xl border border-emerald-700/40 bg-gradient-to-br from-emerald-950/30 to-slate-900/40 p-4">
+      <div className="text-[10px] font-semibold uppercase tracking-wide text-emerald-400/80">🍻 Today's pick</div>
+      <div className="mt-1 flex flex-wrap items-baseline gap-x-2">
+        <a
+          href={barMapUrl(bar)}
+          target="_blank"
+          rel="noreferrer"
+          className="text-lg font-bold text-slate-100 hover:text-emerald-300"
+        >
+          {bar.name}
+        </a>
+        <span className="text-xs text-slate-500">· {bar.area}</span>
+      </div>
+      <p className="mt-1 text-sm text-slate-400">{bar.blurb}</p>
+      <div className="mt-2 text-[11px] text-slate-500">A rotating daily pick from the spots below 28th St.</div>
+    </div>
+  )
+}
+
 // "Collected" bars — a per-device checklist you build as you watch games out. The
 // VISITED seed pre-fills the ones we've already hit; taps add more, saved locally.
 const COLLECTED_KEY = 'wc_bars_collected'
@@ -239,6 +274,8 @@ export default function WatchNYC() {
           World Cup and you need to actually see the goal.
         </p>
       </div>
+
+      <BarOfTheDay />
 
       <WatchParties />
 

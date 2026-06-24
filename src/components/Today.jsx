@@ -9,10 +9,6 @@ import TeamStanding from './TeamStanding'
 import reports from '../data/reports.json'
 import { IRAN_WAR_STATUS } from '../data/iranWarStatus'
 import FifaRank from './FifaRank'
-import { WATCH_BARS, zoneOf } from '../data/watchBars'
-
-// Google Maps search link for a bar (name + area), so we store no addresses.
-const barMapUrl = (b) => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${b.name} ${b.area} New York`)}`
 
 // Lazily fetch per-match recap detail (scorers, stats, headline) for a set of
 // finished matches. Returns { [id]: summary }. Best-effort per match so one bad
@@ -359,48 +355,6 @@ function OddsRow({ odds, home, away }) {
         {odds.total != null && cell('O/U', odds.total)}
       </div>
     </div>
-  )
-}
-
-// Manual overrides for the daily bar pick, keyed by local date (YYYY-M-D, month
-// 0-indexed) — Neil sets these via chat. Unlisted days use the rotation below.
-const BAR_OF_DAY_OVERRIDES = { '2026-5-24': 'slainte' }
-
-// "Today's bar" callout for the top of the Today tab. Picks one spot from the
-// below-28th-St (downtown) set, deterministically by date so it stays put all day
-// and rotates at midnight (not on every 60s data refresh). Full planner = Bars tab.
-function BarOfTheDay() {
-  const downtown = WATCH_BARS.filter((b) => zoneOf(b.area) === 'downtown')
-  if (downtown.length === 0) return null
-  const now = new Date()
-  const key = `${now.getFullYear()}-${now.getMonth()}-${now.getDate()}`
-  let h = 0
-  for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) | 0
-  const override = BAR_OF_DAY_OVERRIDES[key]
-  const bar = (override && downtown.find((b) => b.id === override)) || downtown[Math.abs(h) % downtown.length]
-  return (
-    <section className="mb-8">
-      <div className="rounded-2xl border border-emerald-700/40 bg-gradient-to-br from-emerald-950/30 to-slate-900/40 p-4">
-        <div className="text-[10px] font-semibold uppercase tracking-wide text-emerald-400/80">
-          🍻 Today's bar pick
-        </div>
-        <div className="mt-1 flex flex-wrap items-baseline gap-x-2">
-          <a
-            href={barMapUrl(bar)}
-            target="_blank"
-            rel="noreferrer"
-            className="text-lg font-bold text-slate-100 hover:text-emerald-300"
-          >
-            {bar.name}
-          </a>
-          <span className="text-xs text-slate-500">· {bar.area}</span>
-        </div>
-        <p className="mt-1 text-sm text-slate-400">{bar.blurb}</p>
-        <div className="mt-2 text-[11px] text-slate-500">
-          Rotating pick from the spots below 28th St — see them all in the 🍻 Bars tab.
-        </div>
-      </div>
-    </section>
   )
 }
 
@@ -847,9 +801,6 @@ export default function Today({ matches, groupMap, groups, news = [] }) {
 
   return (
     <div>
-      {/* ── Today's rotating bar pick (links to the full Bars tab) ── */}
-      <BarOfTheDay />
-
       {/* ── Followed teams, pinned (USA, Iran, Norway) — compact collapsible rows ── */}
       <FollowingPanel abbrevs={['USA', 'IRN', 'NOR']} matches={matches} groups={groups} />
 
