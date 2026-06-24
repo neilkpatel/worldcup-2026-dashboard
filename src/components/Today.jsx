@@ -442,11 +442,13 @@ function FixtureCard({ m, group, standingMap, summary }) {
       )}
 
       {hasPreview && (
-        <div className="mt-2 space-y-1 border-t border-slate-800 pt-2 text-[11px] text-slate-400">
-          {where && <div>📍 {where}</div>}
-          {m.tv && <div>📺 {m.tv}</div>}
+        <div className="mt-2 flex flex-wrap items-start justify-between gap-x-4 gap-y-1 border-t border-slate-800 pt-2 text-[11px] text-slate-400">
+          <div className="min-w-0 flex-1 space-y-1">
+            {where && <div>📍 {where}</div>}
+            {m.tv && <div>📺 {m.tv}</div>}
+          </div>
           {hasForm && (
-            <div className="space-y-0.5 pt-0.5">
+            <div className="shrink-0 space-y-0.5">
               <div className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Recent form</div>
               <FormChips label={m.home.abbrev} games={form[m.home.id]} />
               <FormChips label={m.away.abbrev} games={form[m.away.id]} />
