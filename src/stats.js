@@ -4,7 +4,10 @@
 
 // Golden Boot race: aggregate every goal across all played matches. Own goals
 // are excluded (not credited to a scorer). Returns scorers sorted by goals,
-// then by fewest penalties (open-play goals break ties), then name.
+// then by fewest penalties (open-play goals break ties), then name. Each scorer
+// also carries `goalsList` — every goal with its match context (opponent, score
+// from the scorer's side, minute, penalty, date) — so player search can show
+// exactly which games a player scored in.
 export function buildScorers(matches, teamLookup = {}) {
   const tally = new Map()
   for (const m of matches) {
@@ -20,11 +23,29 @@ export function buildScorers(matches, teamLookup = {}) {
         logo: teamLookup[d.teamId]?.logo ?? '',
         goals: 0,
         penalties: 0,
+        goalsList: [],
       }
       entry.goals += 1
       if (d.penalty) entry.penalties += 1
+      // The scorer's side + opponent within this match, for "which game" context.
+      const me = m.home.id === d.teamId ? m.home : m.away.id === d.teamId ? m.away : null
+      const opp = me ? (me === m.home ? m.away : m.home) : null
+      entry.goalsList.push({
+        matchId: m.id,
+        minute: d.minute,
+        penalty: !!d.penalty,
+        opponent: opp?.name ?? '',
+        oppAbbrev: opp?.abbrev ?? '',
+        scoreFor: me?.score ?? '',
+        scoreAgainst: opp?.score ?? '',
+        date: m.date,
+      })
       tally.set(key, entry)
     }
+  }
+  const minuteNum = (s) => parseInt(s, 10) || 0
+  for (const e of tally.values()) {
+    e.goalsList.sort((a, b) => a.date - b.date || minuteNum(a.minute) - minuteNum(b.minute))
   }
   return [...tally.values()].sort(
     (a, b) => b.goals - a.goals || a.penalties - b.penalties || a.name.localeCompare(b.name)
