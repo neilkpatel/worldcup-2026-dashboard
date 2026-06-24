@@ -345,17 +345,12 @@ function OddsRow({ odds, home, away }) {
     </span>
   )
   return (
-    <div className="mt-2 border-t border-slate-800 pt-2 text-[11px]">
-      <div className="mb-1 flex items-center justify-between text-[10px] uppercase tracking-wide text-slate-500">
-        <span>💰 Moneyline</span>
-        {odds.provider && <span className="normal-case">{odds.provider}</span>}
-      </div>
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-slate-400">
-        {cell(home.abbrev || 'Home', odds.home)}
-        {cell('Draw', odds.draw)}
-        {cell(away.abbrev || 'Away', odds.away)}
-        {odds.total != null && cell('O/U', odds.total)}
-      </div>
+    <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-slate-800 pt-2 text-[11px] text-slate-400">
+      <span title={odds.provider ? `Moneyline · ${odds.provider}` : 'Moneyline'}>💰</span>
+      {cell(home.abbrev || 'Home', odds.home)}
+      {cell('Draw', odds.draw)}
+      {cell(away.abbrev || 'Away', odds.away)}
+      {odds.total != null && cell('O/U', odds.total)}
     </div>
   )
 }
