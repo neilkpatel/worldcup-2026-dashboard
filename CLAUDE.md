@@ -179,7 +179,8 @@ hand-researched list. Two data files (NOT the old `nycBars.js`, now unused):
   team→group map, team-id→{name,logo} lookup. Also stamps `m.number` = FIFA match #
   (1–104), derived from the chronological schedule order (ESPN's native order is
   already FIFA-ordered, so this is exact); `prettySlot()` rewrites knockout
-  placeholder names ("Round of 32 7 Winner" → "Winner of Round of 32 #7")
+  placeholder names to absolute match numbers ("Round of 32 7 Winner" → "Winner of
+  Match 79"; feeder index maps R32=72+N, R16=88+N, QF=96+N, SF=100+N — verified)
 - `src/stats.js` — `buildScorers` (Golden Boot) + `buildThirdPlaceRace` (best-8 thirds)
 - `src/lib/picks.js` + `src/components/PickEm.jsx` — Pick'em (see section above)
 - `src/reports.js` — `templateReport` fallback + `matchTags` storyline chips

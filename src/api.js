@@ -10,15 +10,19 @@ const SUMMARY =
 // Full tournament window — ESPN returns all 104 matches in one call
 const TOURNAMENT_DATES = '20260611-20260719'
 
-// Rewrite ESPN's awkward knockout placeholder slot names into plain English, e.g.
-// "Round of 32 7 Winner" -> "Winner of Round of 32 #7", "Group F 2nd Place" ->
-// "Group F runner-up", "Third Place Group A/B/C/D/F" -> "Best 3rd: A/B/C/D/F".
-// Real team names (Brazil, Argentina, …) pass through untouched.
+// Rewrite ESPN's awkward knockout placeholder slot names into plain English. The
+// feeder index ("Round of 32 7") maps cleanly to an ABSOLUTE FIFA match number
+// (R32 = 72+N, R16 = 88+N, QF = 96+N, SF = 100+N — verified against the schedule),
+// so "Round of 32 7 Winner" -> "Winner of Match 79", which points straight at the
+// bracket card and ticket stubs. "Group F 2nd Place" -> "Group F runner-up",
+// "Third Place Group A/B/C/D/F" -> "Best 3rd: A/B/C/D/F". Real team names pass through.
+const KO_OFFSET = { 'Round of 32': 72, 'Round of 16': 88, Quarterfinal: 96, Semifinal: 100 }
+
 export function prettySlot(name) {
   if (!name) return name
   let m
   m = name.match(/^(Round of 32|Round of 16|Quarterfinal|Semifinal) (\d+) (Winner|Loser)$/)
-  if (m) return `${m[3]} of ${m[1]} #${m[2]}`
+  if (m) return `${m[3]} of Match ${KO_OFFSET[m[1]] + Number(m[2])}`
   m = name.match(/^Group ([A-L]) 2nd Place$/)
   if (m) return `Group ${m[1]} runner-up`
   m = name.match(/^Group ([A-L]) Winner$/)
