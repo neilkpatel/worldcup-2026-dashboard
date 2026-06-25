@@ -50,7 +50,10 @@ function BracketMatch({ match }) {
   return (
     <div className="rounded-lg border border-slate-800 bg-slate-900 p-2 text-xs">
       <div className="mb-1 flex items-center justify-between text-[10px] text-slate-500">
-        <span>{dateLabel}</span>
+        <span>
+          {match.number ? <span className="font-semibold text-slate-400">Match {match.number} · </span> : null}
+          {dateLabel}
+        </span>
         {match.state === 'in' ? (
           <span className="flex items-center gap-1 font-semibold text-emerald-400">
             <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />

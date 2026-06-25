@@ -62,7 +62,13 @@ export async function fetchSchedule() {
   const res = await fetch(`${SCOREBOARD}?dates=${TOURNAMENT_DATES}&limit=200`)
   if (!res.ok) throw new Error(`scoreboard request failed: ${res.status}`)
   const data = await res.json()
-  return (data.events ?? []).map(parseEvent).sort((a, b) => a.date - b.date)
+  // FIFA numbers matches in kickoff order (opener = 1, final = 104) and the numbers
+  // are fixed in advance. ESPN doesn't carry the number, so derive it from the sorted
+  // schedule — accurate for the knockouts (no simultaneous kickoffs there).
+  return (data.events ?? [])
+    .map(parseEvent)
+    .sort((a, b) => a.date - b.date)
+    .map((m, i) => ({ ...m, number: i + 1 }))
 }
 
 export async function fetchStandings() {
