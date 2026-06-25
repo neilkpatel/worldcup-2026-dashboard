@@ -11,15 +11,17 @@ export default function Schedule({ matches, groupMap, groups }) {
   // Default to upcoming so the tab opens on what's next, not finished games.
   const [view, setView] = useState('upcoming')
 
-  // Distinct real team names for search autocomplete — skip knockout placeholders
-  // ("Semifinal 1 Winner", "Group A Runner-up", etc.) so only actual nations show.
+  // Distinct real team names for search autocomplete. Only the 48 nations play in
+  // the group stage, so deriving from group-stage matches cleanly excludes every
+  // knockout placeholder slot ("Group F runner-up", "Winner of Round of 32 #7", …).
   const teamOptions = useMemo(
     () =>
       [
         ...new Set(
           matches
+            .filter((m) => m.round === 'group-stage')
             .flatMap((m) => [m.home, m.away])
-            .filter((t) => t.abbrev && !/winner|loser|runner|\btbd\b/i.test(t.name))
+            .filter((t) => t.abbrev)
             .map((t) => t.name),
         ),
       ].sort((a, b) => a.localeCompare(b)),

@@ -11,7 +11,7 @@ import WatchNYC from './components/WatchNYC'
 // Public on Neil's request (note: this exposes the venues/dates he'll be at).
 const MyTickets = lazy(() => import('./components/MyTickets'))
 
-const TABS = ['Today', 'Schedule', 'Bars', 'Groups', 'Golden Boot', 'Bracket', ...(MyTickets ? ["Neil's Tickets"] : []), "Pick'em"]
+const TABS = ['Today', 'Schedule', 'Groups', 'Golden Boot', 'Bracket', ...(MyTickets ? ["Neil's Tickets"] : []), 'Bars', "Pick'em"]
 const REFRESH_MS = 60_000
 
 // The IANA zone + short label of the viewer's machine — every kickoff time on the

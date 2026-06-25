@@ -406,6 +406,7 @@ function FixtureCard({ m, group, standingMap, summary }) {
       <div className="mb-2 flex items-center justify-between">
         <span className="rounded bg-slate-800 px-1.5 py-0.5 text-[10px] font-medium text-slate-400">
           {group ? `Group ${group}` : 'Knockout'}
+          {m.number ? <span className="text-slate-500"> · Match {m.number}</span> : null}
         </span>
         <StatusPill m={m} />
       </div>
