@@ -161,7 +161,7 @@ function knockoutStatus({ teamId, name, standing, groupLetter, matches, thirds }
     if (me?.qualifying) {
       return {
         tone: 'track',
-        short: 'Would reach Round of 32',
+        short: 'On track for Round of 32',
         detail: `${name} is 3rd in Group ${groupLetter}. Each group's top 2 go through automatically, and the last 8 spots go to the best of the 12 third-placed teams — ${name} is ${place} of those 12 right now, inside the top 8, so it would qualify if that holds once the final groups finish${!groupDone && oppName ? ` (plays ${oppName} next)` : ''}.`,
       }
     }
