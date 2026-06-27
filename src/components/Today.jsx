@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import ResultCard from './ResultCard'
 import Explainer from './Explainer'
 import { lastCompletedDay } from '../recap'
-import { fetchMatchSummary, fetchTeamNews } from '../api'
+import { fetchMatchSummary, fetchTeamNews, groupStageComplete } from '../api'
 import { MARQUEE } from '../stakes'
 import { buildStandingMap, ordinal } from '../stats'
 import TeamStanding from './TeamStanding'
@@ -743,6 +743,48 @@ function FollowedTeam({ abbrev, matches, groups }) {
   )
 }
 
+// Transition callout that fires the moment the group stage finishes (data-driven —
+// all 72 group fixtures final), pointing people to the now-meaningful bracket. Big
+// and friendly for the top of Today; dismissible once per device so it nudges, then
+// gets out of the way.
+function KnockoutBanner({ matches, onGoToBracket }) {
+  const KEY = 'wc_knockout_banner_2026'
+  const [dismissed, setDismissed] = useState(
+    () => typeof localStorage !== 'undefined' && localStorage.getItem(KEY) === '1',
+  )
+  if (dismissed || !groupStageComplete(matches)) return null
+  const dismiss = (e) => {
+    e.stopPropagation()
+    setDismissed(true)
+    localStorage.setItem(KEY, '1')
+  }
+  return (
+    <div className="mb-6 flex items-stretch overflow-hidden rounded-2xl border border-amber-500/40 bg-gradient-to-r from-amber-500/15 via-amber-500/5 to-emerald-500/10">
+      <button
+        type="button"
+        onClick={onGoToBracket}
+        className="flex flex-1 items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-white/5"
+      >
+        <span className="text-2xl" aria-hidden>🏆</span>
+        <span className="min-w-0">
+          <span className="block font-bold text-amber-200">The Round of 32 is set</span>
+          <span className="block text-sm text-slate-300">
+            Group stage's done — the bracket is live. Tap to see who plays who →
+          </span>
+        </span>
+      </button>
+      <button
+        type="button"
+        onClick={dismiss}
+        aria-label="Dismiss"
+        className="shrink-0 px-3 text-slate-500 transition-colors hover:bg-white/5 hover:text-slate-200"
+      >
+        ✕
+      </button>
+    </div>
+  )
+}
+
 function LatestResults({ matches, standingMap }) {
   const summaries = useMatchSummaries(matches)
   if (matches.length === 0) return null
@@ -767,7 +809,7 @@ function LatestResults({ matches, standingMap }) {
   )
 }
 
-export default function Today({ matches, groupMap, groups, news = [] }) {
+export default function Today({ matches, groupMap, groups, news = [], onGoToBracket }) {
   const standingMap = useMemo(() => buildStandingMap(groups), [groups])
   const now = new Date()
   const todayKey = dayKey(now)
@@ -804,6 +846,9 @@ export default function Today({ matches, groupMap, groups, news = [] }) {
     <div>
       {/* ── Transient "what's new" toast (once per device, auto-dismisses) ── */}
       <WhatsNew />
+
+      {/* ── Group-stage-over → bracket nudge (fires when all 72 group games are final) ── */}
+      <KnockoutBanner matches={matches} onGoToBracket={onGoToBracket} />
 
       {/* ── Followed teams, pinned (USA, Iran, Norway) — compact collapsible rows ── */}
       <FollowingPanel abbrevs={['USA', 'IRN', 'NOR']} matches={matches} groups={groups} />

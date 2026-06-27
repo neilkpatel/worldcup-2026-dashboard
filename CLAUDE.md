@@ -198,7 +198,17 @@ hand-researched list. Two data files (NOT the old `nycBars.js`, now unused):
 - `src/components/GoldenBoot.jsx` — top-scorer leaderboard (own tab)
 - `src/components/Groups.jsx` — 12 group tables + best-third-place race
 - `src/components/Bracket.jsx` — knockout bracket R32→final + 3rd-place match;
-  reads `match.round` (ESPN season slug), fills slots as teams qualify
+  reads `match.round` (ESPN season slug), fills slots as teams qualify. Promoted to
+  the 2nd tab (🏆) since it's the main event once groups end. MOBILE shows ONE round
+  at a time via a R32/R16/QF/SF/3rd/Final switcher (defaults to the live/current
+  round); desktop keeps the horizontal multi-column view. Spotlights the live game
+  (or, if none live, the next to kick off) with an emerald ring + "NEXT UP" badge,
+  and flags Neil's tickets (Match 91, 99) with 🎟️. Columns sort by `match.number`.
+- Knockout activation is DATA-DRIVEN, not date-hardcoded: `groupStageComplete(matches)`
+  in api.js = all 72 group fixtures `completed`. It gates the Today "🏆 The Round of
+  32 is set" transition banner (`KnockoutBanner`, dismiss once per device via
+  `wc_knockout_banner_2026`) that deep-links to the Bracket tab. App.jsx adds a live
+  pulse on the Bracket tab when `isKnockoutRound(round) && state==='in'`.
 - `src/components/Schedule.jsx` — full schedule grouped by day, team filter
 - `src/components/FifaRank.jsx` + `src/data/fifaRankings.js` — FIFA rank chip (see above)
 - `src/components/WatchNYC.jsx` + `src/data/watchBars.js` + `src/data/watchParties.js`

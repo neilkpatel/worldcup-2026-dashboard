@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
-import { fetchSchedule, fetchStandings, fetchNews, buildGroupMap } from './api'
+import { fetchSchedule, fetchStandings, fetchNews, buildGroupMap, isKnockoutRound } from './api'
 import Today from './components/Today'
 import Groups from './components/Groups'
 import GoldenBoot from './components/GoldenBoot'
@@ -11,7 +11,9 @@ import WatchNYC from './components/WatchNYC'
 // Public on Neil's request (note: this exposes the venues/dates he'll be at).
 const MyTickets = lazy(() => import('./components/MyTickets'))
 
-const TABS = ['Today', 'Schedule', 'Groups', 'Golden Boot', 'Bracket', ...(MyTickets ? ["Neil's Tickets"] : []), 'Bars', "Pick'em"]
+// Bracket sits 2nd — it becomes the main event once the group stage ends, so it
+// stays prominent (and the tab grows a live pulse when a knockout game is on).
+const TABS = ['Today', 'Bracket', 'Schedule', 'Groups', 'Golden Boot', ...(MyTickets ? ["Neil's Tickets"] : []), 'Bars', "Pick'em"]
 const REFRESH_MS = 60_000
 
 // The IANA zone + short label of the viewer's machine — every kickoff time on the
@@ -66,6 +68,8 @@ function App() {
 
   const groupMap = useMemo(() => buildGroupMap(groups), [groups])
   const liveCount = matches.filter((m) => m.state === 'in').length
+  // A knockout game in progress lights a pulse on the Bracket tab.
+  const knockoutLive = matches.some((m) => isKnockoutRound(m.round) && m.state === 'in')
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">
@@ -97,7 +101,13 @@ function App() {
                     : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
                 }`}
               >
-                {t === 'Bars' ? '🍻 Bars' : t}
+                {t === 'Bars' ? '🍻 Bars' : t === 'Bracket' ? '🏆 Bracket' : t}
+                {t === 'Bracket' && knockoutLive && (
+                  <span
+                    className="ml-1.5 inline-block h-2 w-2 animate-pulse rounded-full bg-emerald-400 align-middle"
+                    title="Knockout match live now"
+                  />
+                )}
                 {t === "Pick'em" && !pickemSeen && (
                   <span className="ml-1.5 inline-flex animate-pulse rounded-full bg-amber-400 px-1.5 py-px text-[9px] font-bold uppercase tracking-wide text-slate-900 align-[1px]">
                     New
@@ -132,7 +142,13 @@ function App() {
         ) : (
           <>
             {tab === 'Today' && (
-              <Today matches={matches} groupMap={groupMap} groups={groups} news={news} />
+              <Today
+                matches={matches}
+                groupMap={groupMap}
+                groups={groups}
+                news={news}
+                onGoToBracket={() => setTab('Bracket')}
+              />
             )}
             {tab === "Pick'em" && <PickEm matches={matches} groupMap={groupMap} />}
             {tab === 'Bars' && <WatchNYC />}

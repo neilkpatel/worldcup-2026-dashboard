@@ -125,6 +125,18 @@ function officialKnockoutNumber(date) {
   return bestDiff <= 3 * 60 * 60 * 1000 ? best : null
 }
 
+export function isKnockoutRound(round) {
+  return KO_ROUNDS.has(round)
+}
+
+// The group stage is matches 1–72; it's "done" the moment every group fixture is
+// final. That single data-driven signal is the cue to promote the knockout bracket
+// (transition banner + tab treatment) — no hard-coded date to drift out of sync.
+export function groupStageComplete(matches) {
+  const group = matches.filter((m) => m.round === 'group-stage')
+  return group.length >= 72 && group.every((m) => m.completed)
+}
+
 export async function fetchSchedule() {
   const res = await fetch(`${SCOREBOARD}?dates=${TOURNAMENT_DATES}&limit=200`)
   if (!res.ok) throw new Error(`scoreboard request failed: ${res.status}`)
