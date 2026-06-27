@@ -107,8 +107,12 @@ function BracketMatch({ match }) {
 }
 
 export default function Bracket({ matches }) {
+  // Order each column by official match number (not kickoff time) so the cards run in
+  // bracket order — that's what makes the "Winner of Match N" feeder labels easy to trace.
   const byRound = (slug) =>
-    matches.filter((m) => m.round === slug).sort((a, b) => a.date - b.date)
+    matches
+      .filter((m) => m.round === slug)
+      .sort((a, b) => (a.number ?? 0) - (b.number ?? 0) || a.date - b.date)
 
   const thirdPlace = byRound('3rd-place-match')
 

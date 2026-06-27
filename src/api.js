@@ -84,17 +84,59 @@ function parseEvent(event) {
   }
 }
 
+// FIFA assigns knockout match numbers by BRACKET POSITION, not kickoff time, so a plain
+// chronological sort mis-numbers ~14 of the 32 knockout fixtures (e.g. Houston's Round of
+// 16 is Match 90 even though it kicks off four hours BEFORE Philadelphia's Match 89). The
+// bracket is fixed and published, so pin each knockout fixture to its official number by
+// kickoff time — all 32 knockout kickoffs are at distinct UTC times, so the nearest
+// official slot is unambiguous. This also keeps the "Winner of Match N" feeder labels
+// pointing at the right games, since ESPN's feeder indices ARE the official bracket
+// indices (so prettySlot's 72/88/96/100 offsets are correct once numbers are right).
+// Group-stage matches (1–72) do run in kickoff order, so they stay chronological.
+const KO_ROUNDS = new Set([
+  'round-of-32', 'round-of-16', 'quarterfinals', 'semifinals', '3rd-place-match', 'final',
+])
+const KO_SCHEDULE = [
+  [73, '2026-06-28T19:00Z'], [74, '2026-06-29T20:30Z'], [75, '2026-06-30T01:00Z'],
+  [76, '2026-06-29T17:00Z'], [77, '2026-06-30T21:00Z'], [78, '2026-06-30T17:00Z'],
+  [79, '2026-07-01T01:00Z'], [80, '2026-07-01T16:00Z'], [81, '2026-07-02T00:00Z'],
+  [82, '2026-07-01T20:00Z'], [83, '2026-07-02T23:00Z'], [84, '2026-07-02T19:00Z'],
+  [85, '2026-07-03T03:00Z'], [86, '2026-07-03T22:00Z'], [87, '2026-07-04T01:30Z'],
+  [88, '2026-07-03T18:00Z'], [89, '2026-07-04T21:00Z'], [90, '2026-07-04T17:00Z'],
+  [91, '2026-07-05T20:00Z'], [92, '2026-07-06T00:00Z'], [93, '2026-07-06T19:00Z'],
+  [94, '2026-07-07T00:00Z'], [95, '2026-07-07T16:00Z'], [96, '2026-07-07T20:00Z'],
+  [97, '2026-07-09T20:00Z'], [98, '2026-07-10T19:00Z'], [99, '2026-07-11T21:00Z'],
+  [100, '2026-07-12T01:00Z'], [101, '2026-07-14T19:00Z'], [102, '2026-07-15T19:00Z'],
+  [103, '2026-07-18T21:00Z'], [104, '2026-07-19T19:00Z'],
+].map(([n, iso]) => ({ n, ms: new Date(iso).getTime() }))
+
+// The official knockout match number whose kickoff is closest to `date` (within 3h), else
+// null — so a future schedule shift of more than 3h fails safe to chronological numbering.
+function officialKnockoutNumber(date) {
+  let best = null
+  let bestDiff = Infinity
+  for (const { n, ms } of KO_SCHEDULE) {
+    const diff = Math.abs(date.getTime() - ms)
+    if (diff < bestDiff) {
+      bestDiff = diff
+      best = n
+    }
+  }
+  return bestDiff <= 3 * 60 * 60 * 1000 ? best : null
+}
+
 export async function fetchSchedule() {
   const res = await fetch(`${SCOREBOARD}?dates=${TOURNAMENT_DATES}&limit=200`)
   if (!res.ok) throw new Error(`scoreboard request failed: ${res.status}`)
   const data = await res.json()
-  // FIFA numbers matches in kickoff order (opener = 1, final = 104) and the numbers
-  // are fixed in advance. ESPN doesn't carry the number, so derive it from the sorted
-  // schedule — accurate for the knockouts (no simultaneous kickoffs there).
   return (data.events ?? [])
     .map(parseEvent)
     .sort((a, b) => a.date - b.date)
-    .map((m, i) => ({ ...m, number: i + 1 }))
+    .map((m, i) => ({
+      ...m,
+      // Knockouts use their fixed official number; group matches stay chronological.
+      number: (KO_ROUNDS.has(m.round) && officialKnockoutNumber(m.date)) || i + 1,
+    }))
 }
 
 export async function fetchStandings() {

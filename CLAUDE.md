@@ -177,10 +177,16 @@ hand-researched list. Two data files (NOT the old `nycBars.js`, now unused):
 ## Structure
 - `src/api.js` — fetch + parse for scoreboard/standings/summary; scoring `details`,
   team→group map, team-id→{name,logo} lookup. Also stamps `m.number` = FIFA match #
-  (1–104), derived from the chronological schedule order (ESPN's native order is
-  already FIFA-ordered, so this is exact); `prettySlot()` rewrites knockout
-  placeholder names to absolute match numbers ("Round of 32 7 Winner" → "Winner of
-  Match 79"; feeder index maps R32=72+N, R16=88+N, QF=96+N, SF=100+N — verified)
+  (1–104). Group matches (1–72) run in kickoff order, so they're numbered by the
+  sorted schedule. KNOCKOUTS ARE NOT: FIFA numbers them by bracket position, not
+  kickoff time, so a chronological sort mis-numbers 14 of the 32 (e.g. Houston's R16
+  kicks off before Philadelphia's but is the higher number, Match 90 vs 89). So each
+  knockout fixture is pinned to its FIXED official number via the `KO_SCHEDULE` table
+  (matched by kickoff UTC — all 32 are distinct). `prettySlot()` then rewrites feeder
+  placeholders to absolute numbers ("Round of 32 7 Winner" → "Winner of Match 79";
+  offsets R32=72+N, R16=88+N, QF=96+N, SF=100+N) — ESPN's feeder indices ARE the
+  official bracket indices, so these are correct once `m.number` is right. Verified
+  against FIFA/Wikipedia + ticketing (M91 MetLife = W76 v W78, M99 Miami = W91 v W92).
 - `src/stats.js` — `buildScorers` (Golden Boot) + `buildThirdPlaceRace` (best-8 thirds)
 - `src/lib/picks.js` + `src/components/PickEm.jsx` — Pick'em (see section above)
 - `src/reports.js` — `templateReport` fallback + `matchTags` storyline chips
