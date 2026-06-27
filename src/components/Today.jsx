@@ -4,7 +4,7 @@ import Explainer from './Explainer'
 import { lastCompletedDay } from '../recap'
 import { fetchMatchSummary, fetchTeamNews, groupStageComplete } from '../api'
 import { MARQUEE } from '../stakes'
-import { buildStandingMap, ordinal } from '../stats'
+import { buildStandingMap, buildThirdPlaceRace, ordinal } from '../stats'
 import TeamStanding from './TeamStanding'
 import reports from '../data/reports.json'
 import { IRAN_WAR_STATUS } from '../data/iranWarStatus'
@@ -65,6 +65,120 @@ function timeAgo(date) {
   const hrs = Math.round(mins / 60)
   if (hrs < 24) return `${hrs}h ago`
   return `${Math.round(hrs / 24)}d ago`
+}
+
+// ── Knockout qualification status for a followed team ──────────────────────────
+const KO_ROUND_NAME = {
+  'round-of-32': 'Round of 32',
+  'round-of-16': 'Round of 16',
+  quarterfinals: 'Quarterfinals',
+  semifinals: 'Semifinals',
+  '3rd-place-match': '3rd-place match',
+  final: 'Final',
+}
+
+const QUAL_TONE = {
+  in: { pill: 'bg-emerald-500/15 text-emerald-300', icon: '✅' },
+  champ: { pill: 'bg-amber-500/20 text-amber-200', icon: '🏆' },
+  track: { pill: 'bg-amber-500/15 text-amber-300', icon: '⏳' },
+  risk: { pill: 'bg-orange-500/15 text-orange-300', icon: '⚠️' },
+  out: { pill: 'bg-rose-500/15 text-rose-300', icon: '❌' },
+}
+
+// Verdict for a followed team: prefer the authoritative signal (the team actually
+// appears in a bracket fixture), else fall back to the format rules — top 2 of a
+// group always advance, plus the 8 best third-placed teams — so we can show a status
+// and, when not yet through, what still has to happen. Returns { tone, short, detail }.
+function knockoutStatus({ teamId, name, standing, groupLetter, matches, thirds }) {
+  if (!standing) return null
+
+  // 1) Already slotted into the bracket (real team id in a knockout fixture)?
+  const koMine = matches.filter(
+    (m) => m.round !== 'group-stage' && (m.home.id === teamId || m.away.id === teamId),
+  )
+  if (koMine.length) {
+    const lost = koMine.find(
+      (m) =>
+        m.completed &&
+        ((m.home.id === teamId && m.away.winner) || (m.away.id === teamId && m.home.winner)),
+    )
+    if (lost)
+      return { tone: 'out', short: 'Eliminated', detail: `Knocked out in the ${KO_ROUND_NAME[lost.round]}.` }
+    const wonFinal = koMine.some(
+      (m) =>
+        m.round === 'final' &&
+        m.completed &&
+        ((m.home.id === teamId && m.home.winner) || (m.away.id === teamId && m.away.winner)),
+    )
+    if (wonFinal)
+      return { tone: 'champ', short: 'World Champions', detail: 'Won the final — champions of the world.' }
+    const next =
+      koMine.filter((m) => !m.completed).sort((a, b) => a.date - b.date)[0] ??
+      koMine.sort((a, b) => b.date - a.date)[0]
+    return {
+      tone: 'in',
+      short: `Into the ${KO_ROUND_NAME[next.round]}`,
+      detail: `Through to the ${KO_ROUND_NAME[next.round]}.`,
+    }
+  }
+
+  // 2) Not in the bracket yet — reason from the group standing + format rules.
+  const remaining = matches
+    .filter(
+      (m) =>
+        m.round === 'group-stage' &&
+        m.state !== 'post' &&
+        (m.home.id === teamId || m.away.id === teamId),
+    )
+    .sort((a, b) => a.date - b.date)
+  const groupDone = remaining.length === 0
+  const rank = standing.rank
+  const nextGame = remaining[0]
+  const oppName = nextGame ? (nextGame.home.id === teamId ? nextGame.away.name : nextGame.home.name) : null
+  const when = nextGame ? dateLabel(nextGame.date) : ''
+
+  if (rank <= 2) {
+    if (groupDone) {
+      return {
+        tone: 'in',
+        short: 'Qualified · Round of 32',
+        detail:
+          rank === 1
+            ? `Won Group ${groupLetter} — through to the Round of 32.`
+            : `Runner-up in Group ${groupLetter} — through to the Round of 32.`,
+      }
+    }
+    return {
+      tone: 'track',
+      short: `In a qualifying spot (${ordinal(rank)})`,
+      detail: `Sitting ${ordinal(rank)} in Group ${groupLetter}; a top-2 finish goes through. Last group game${oppName ? ` vs ${oppName}` : ''}${when ? ` (${when})` : ''}.`,
+    }
+  }
+
+  if (rank === 3) {
+    const me = thirds.find((t) => t.id === teamId)
+    const pos = me ? `${ordinal(me.position)} of 12` : '—'
+    if (me?.qualifying) {
+      return {
+        tone: 'track',
+        short: 'In the best-3rd places',
+        detail: `3rd in Group ${groupLetter} — currently ${pos} third-placed teams, and the 8 best advance. ${name} reaches the Round of 32 if that holds as the last groups finish${!groupDone && oppName ? `; plays ${oppName} next` : ''}.`,
+      }
+    }
+    return {
+      tone: 'risk',
+      short: 'Outside best-3rd cutoff',
+      detail: `3rd in Group ${groupLetter}, ${pos} third-placed teams — only the top 8 go through. ${name} needs a third-placed side above it to slip as the remaining groups play${!groupDone && oppName ? `, starting with its own game vs ${oppName}` : ''}.`,
+    }
+  }
+
+  return {
+    tone: 'out',
+    short: groupDone ? 'Eliminated' : 'Long shot',
+    detail: groupDone
+      ? `Finished bottom of Group ${groupLetter} — out of the tournament.`
+      : `${ordinal(rank)} in Group ${groupLetter} — would need to win its last game and overturn goal difference.`,
+  }
 }
 
 const isLogistics = (a) => /how to watch|tv channel|live ?stream|kick-off time/i.test(a.headline)
@@ -587,6 +701,7 @@ function NorwayChant() {
 // a single header row (logo · name · standing); tap to expand its fixtures +
 // headlines. Keeps the top of the Today tab compact since this data is static.
 function FollowingPanel({ abbrevs, matches, groups }) {
+  const thirds = useMemo(() => buildThirdPlaceRace(groups), [groups])
   const present = abbrevs.filter((a) =>
     matches.some((m) => m.home.abbrev === a || m.away.abbrev === a),
   )
@@ -598,7 +713,7 @@ function FollowingPanel({ abbrevs, matches, groups }) {
       </div>
       <div className="divide-y divide-emerald-800/30 overflow-hidden rounded-xl border border-emerald-700/40 bg-gradient-to-br from-emerald-950/30 to-slate-900/40">
         {present.map((a) => (
-          <FollowedTeam key={a} abbrev={a} matches={matches} groups={groups} />
+          <FollowedTeam key={a} abbrev={a} matches={matches} groups={groups} thirds={thirds} />
         ))}
       </div>
     </section>
@@ -608,7 +723,7 @@ function FollowingPanel({ abbrevs, matches, groups }) {
 // One collapsible team row inside FollowingPanel. Collapsed shows just the badge
 // row (with a LIVE chip if they're playing now); expanded reveals fixtures +
 // headlines. Auto-expands when the team goes live so a live game isn't buried.
-function FollowedTeam({ abbrev, matches, groups }) {
+function FollowedTeam({ abbrev, matches, groups, thirds = [] }) {
   const [news, setNews] = useState([])
   // null = follow the default (open iff live); a click pins it to a boolean.
   const [override, setOverride] = useState(null)
@@ -628,6 +743,7 @@ function FollowedTeam({ abbrev, matches, groups }) {
   const me = mine.length ? selfOf(mine.find((m) => selfOf(m).logo) ?? mine[0]) : null
   const teamId = me?.id ?? standing?.id ?? null
   const hasLive = mine.some((m) => m.state === 'in')
+  const qual = knockoutStatus({ teamId, name: me?.name ?? abbrev, standing, groupLetter, matches, thirds })
 
   // Team-specific ESPN headlines for this row (USMNT, Iran, …). Best-effort —
   // a failure just leaves the row without a headlines section.
@@ -696,6 +812,13 @@ function FollowedTeam({ abbrev, matches, groups }) {
               Group {groupLetter} · {ordinal(standing.rank)} · {standing.points} pts · {standing.wins}-{standing.draws}-{standing.losses}
             </div>
           )}
+          {qual && (
+            <span
+              className={`mt-1 inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-semibold ${QUAL_TONE[qual.tone].pill}`}
+            >
+              {QUAL_TONE[qual.tone].icon} {qual.short}
+            </span>
+          )}
         </div>
         <div className="ml-auto flex shrink-0 items-center gap-2">
           {live && (
@@ -709,7 +832,13 @@ function FollowedTeam({ abbrev, matches, groups }) {
       </button>
       {open && (
         <div className="px-3 pb-3">
-          <div className="space-y-1 border-t border-emerald-800/30 pt-3 text-sm text-slate-300">
+          {qual && (
+            <div className="border-t border-emerald-800/30 pt-3 text-xs leading-snug">
+              <span className="font-semibold text-slate-200">{QUAL_TONE[qual.tone].icon} Knockout: </span>
+              <span className="text-slate-400">{qual.detail}</span>
+            </div>
+          )}
+          <div className="mt-3 space-y-1 border-t border-emerald-800/30 pt-3 text-sm text-slate-300">
             {live && <div>{renderFixture(live, 'live')}</div>}
             {next && <div>{renderFixture(next, 'next')}</div>}
             {last && <div>{renderFixture(last, 'last')}</div>}
