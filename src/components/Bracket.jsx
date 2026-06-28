@@ -211,21 +211,20 @@ function useConnectorPaths(containerRef, cardRefs, matches, viewKey) {
   useLayoutEffect(() => {
     const container = containerRef.current
     if (!container) return
+    // Measure with layout offsets (offsetLeft/Top) — these are immune to CSS transforms,
+    // so the connectors stay aligned even when the whole tree is scaled to fit on mobile.
     const compute = () => {
-      const cr = container.getBoundingClientRect()
       const out = []
       for (const [parent, feeders] of Object.entries(FEEDERS)) {
         const pEl = cardRefs.current[parent]
         if (!pEl) continue
-        const p = pEl.getBoundingClientRect()
-        const px = p.left - cr.left
-        const py = p.top - cr.top + p.height / 2
+        const px = pEl.offsetLeft
+        const py = pEl.offsetTop + pEl.offsetHeight / 2
         for (const f of feeders) {
           const cEl = cardRefs.current[f]
           if (!cEl) continue
-          const c = cEl.getBoundingClientRect()
-          const cx = c.right - cr.left
-          const cy = c.top - cr.top + c.height / 2
+          const cx = cEl.offsetLeft + cEl.offsetWidth
+          const cy = cEl.offsetTop + cEl.offsetHeight / 2
           const midX = (cx + px) / 2
           out.push(`M${cx.toFixed(1)},${cy.toFixed(1)} H${midX.toFixed(1)} V${py.toFixed(1)} H${px.toFixed(1)}`)
         }
@@ -247,11 +246,45 @@ function useConnectorPaths(containerRef, cardRefs, matches, viewKey) {
 export default function Bracket({ matches }) {
   // Mobile shows one round at a time; null = follow the live/current round.
   const [mobileRound, setMobileRound] = useState(null)
-  // Mobile bracket view: 'rounds' (one at a time) or 'tree' (full scrollable bracket).
-  const [mobileView, setMobileView] = useState('rounds')
+  // Mobile bracket view: 'tree' (full bracket, default — scaled to fit as a quick
+  // reference) or 'rounds' (one round at a time, detailed).
+  const [mobileView, setMobileView] = useState('tree')
   const containerRef = useRef(null)
   const cardRefs = useRef({})
   const paths = useConnectorPaths(containerRef, cardRefs, matches, mobileView)
+
+  // On phones, scale the whole bracket down so the entire tree fits the screen width
+  // (a quick reference); users pinch-zoom in for detail. Desktop keeps full size + scroll.
+  const treeScrollRef = useRef(null)
+  const treeInnerRef = useRef(null)
+  const [fit, setFit] = useState({ scale: 1, w: null, h: null })
+  useLayoutEffect(() => {
+    const measure = () => {
+      const outer = treeScrollRef.current
+      const inner = treeInnerRef.current
+      if (!outer || !inner) return
+      const avail = outer.clientWidth
+      const naturalW = inner.scrollWidth // transform-immune
+      const naturalH = inner.scrollHeight
+      const isPhone = typeof window !== 'undefined' && window.innerWidth < 640
+      const next =
+        isPhone && naturalW > avail && naturalW > 0
+          ? { scale: avail / naturalW, w: Math.ceil(avail), h: Math.ceil((naturalH * avail) / naturalW) }
+          : { scale: 1, w: null, h: null }
+      setFit((prev) =>
+        prev.scale === next.scale && prev.w === next.w && prev.h === next.h ? prev : next,
+      )
+    }
+    measure()
+    const outer = treeScrollRef.current
+    const ro = new ResizeObserver(measure)
+    if (outer) ro.observe(outer)
+    window.addEventListener('resize', measure)
+    return () => {
+      ro.disconnect()
+      window.removeEventListener('resize', measure)
+    }
+  }, [mobileView, matches])
 
   const inRound = (slug) => matches.filter((m) => m.round === slug)
   // Mobile lists read best in plain match-number order.
@@ -343,6 +376,12 @@ export default function Bracket({ matches }) {
         ))}
       </div>
 
+      {mobileView === 'tree' && (
+        <p className="mb-3 text-[11px] text-slate-500 sm:hidden">
+          Whole bracket at a glance — pinch to zoom in, or switch to Rounds for detail.
+        </p>
+      )}
+
       {/* ── Mobile · rounds: one round at a time, with a switcher + prev/next ── */}
       {mobileView === 'rounds' && (
       <div className="sm:hidden">
@@ -399,8 +438,14 @@ export default function Bracket({ matches }) {
 
       {/* ── Full bracket tree (desktop always; mobile when "Full bracket" is picked) ── */}
       <div className={mobileView === 'tree' ? 'block' : 'hidden sm:block'}>
-        <div className="overflow-x-auto pb-2">
-          <div className="inline-block min-w-max">
+        <div ref={treeScrollRef} className="overflow-x-auto pb-2">
+          {/* Reserve the scaled footprint so the scale transform leaves no whitespace */}
+          <div style={fit.scale !== 1 ? { width: fit.w, height: fit.h } : undefined}>
+            <div
+              ref={treeInnerRef}
+              className="inline-block min-w-max"
+              style={fit.scale !== 1 ? { transform: `scale(${fit.scale})`, transformOrigin: 'top left' } : undefined}
+            >
             {/* Round headers, aligned above their columns */}
             <div className="flex gap-12">
               {ROUND_ORDER.map((slug) => {
@@ -443,6 +488,7 @@ export default function Bracket({ matches }) {
                   )
                 })}
               </div>
+            </div>
             </div>
           </div>
         </div>
