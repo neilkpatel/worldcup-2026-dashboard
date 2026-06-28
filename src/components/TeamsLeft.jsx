@@ -102,7 +102,7 @@ export default function TeamsLeft({ matches }) {
 
   return (
     <section className="mb-6">
-      <div className="flex items-center gap-5 rounded-2xl border border-emerald-600/30 bg-gradient-to-br from-emerald-950/40 to-slate-900/40 px-5 py-4">
+      <div className="alive-pulse flex items-center gap-5 rounded-2xl border border-emerald-600/40 bg-gradient-to-br from-emerald-950/40 to-slate-900/40 px-5 py-4">
         <div className="text-6xl font-black tabular-nums text-emerald-300 sm:text-7xl">{display}</div>
         <div className="min-w-0">
           <div className="text-base font-bold text-slate-100">teams still alive</div>

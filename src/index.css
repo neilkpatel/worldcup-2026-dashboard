@@ -79,9 +79,29 @@ body {
   animation: goal-pop 3.5s ease-out forwards;
 }
 
+/* Flashing emerald frame around the "teams still alive" counter — draws the eye to
+   the headline knockout number. */
+@keyframes alive-pulse {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 1px rgba(16, 185, 129, 0.5),
+      0 0 14px 0 rgba(16, 185, 129, 0.15);
+  }
+  50% {
+    box-shadow:
+      0 0 0 2px rgba(16, 185, 129, 0.95),
+      0 0 26px 3px rgba(16, 185, 129, 0.4);
+  }
+}
+.alive-pulse {
+  animation: alive-pulse 1.8s ease-in-out infinite;
+}
+
 /* Respect reduced-motion: keep a steady green frame instead of flashing. */
 @media (prefers-reduced-motion: reduce) {
   .live-row,
+  .alive-pulse,
   .today-box {
     animation: none;
     box-shadow:

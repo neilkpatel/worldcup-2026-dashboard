@@ -204,18 +204,23 @@ hand-researched list. Two data files (NOT the old `nycBars.js`, now unused):
   when all are out), and the pill flips from qualification status to the next knockout
   game ("⚔️ Round of 32 · vs <opp> · <date>"). FixtureCard also labels knockout games
   "⚔️ <round> · elimination · Match N" (amber) instead of a qualified team's old group.
-- `src/components/TeamsLeft.jsx` — big "teams still alive" counter at the top of Today
-  (knockout phase only). Counts down by game: 32 − completed main-bracket KO matches
-  (excludes 3rd-place, which eliminates no one new). Remembers the value last seen on the
-  device (`wc_teams_left_seen`) and tweens the DROP since then (e.g. 32→24) with a "▼ N out
-  since your last visit" flourish; honors prefers-reduced-motion. Shows a 🏆 champion hero
-  once the final is decided. Bracket round headers no longer show a bare match count (read
-  as a confusing second number, e.g. "Round of 32 16").
-- `src/components/TitleRace.jsx` + `fetchTitleOdds()` in api.js — "🏆 Title race" card on
-  Today: implied championship odds from Polymarket's public "World Cup Winner" market,
-  fetched CLIENT-SIDE (gamma API sends `access-control-allow-origin: *`, so no key/proxy —
-  Option A). Best-effort (hides if the fetch fails), top 10 teams with bars, followed teams
-  (USA/Norway) bolded. Refreshes every 10 min.
+- Today layout (knockout phase): a full-width "teams still alive" counter HERO at the very
+  top, then a 2-col dashboard — game feed (today's match → latest results → news) on the
+  left, tracking sidebar (followed teams + collapsed Title race) on the right. Mobile stacks
+  counter → game → … so today's match is in the top frame. The old "Round of 32 is set"
+  banner was removed. Only the counter (and a live game) animate — today's-games frame is
+  static now — to keep the page calm/quick-to-read.
+- `src/components/TeamsLeft.jsx` — the counter hero. Counts down by game: 32 − completed
+  main-bracket KO matches (excludes 3rd-place). Remembers the value last seen on the device
+  (`wc_teams_left_seen`) and tweens the DROP since then (e.g. 32→31) with a "▼ N out since
+  your last visit" flourish; flashing border via the `.alive-pulse` CSS class (in index.css,
+  reduced-motion-aware). 🏆 champion hero once the final is decided. (Bracket round headers
+  no longer show a bare match count.)
+- `src/components/TitleRace.jsx` + `fetchTitleOdds()` in api.js — "🏆 Title race": implied
+  championship odds from Polymarket's public "World Cup Winner" market, fetched CLIENT-SIDE
+  (gamma API sends `access-control-allow-origin: *`, no key/proxy). COLLAPSED by default —
+  the header shows the leader inline ("· France 23% favorite"); click to expand the top-10
+  bars (followed teams bolded). Best-effort (hides if the fetch fails), refreshes every 10 min.
 - `src/components/ResultCard.jsx` — per-match analysis card; body prefers a Claude
   verdict, else ESPN's own match report (`summary.story`), else a template
 - `src/components/GoldenBoot.jsx` — top-scorer leaderboard (own tab)
@@ -237,10 +242,10 @@ hand-researched list. Two data files (NOT the old `nycBars.js`, now unused):
   (or next to kick off) with an emerald ring + "NEXT UP"; flags Neil's tickets (91, 99)
   with 🎟️; Final gets gold accent + a champion banner once decided.
 - Knockout activation is DATA-DRIVEN, not date-hardcoded: `groupStageComplete(matches)`
-  in api.js = all 72 group fixtures `completed`. It gates the Today "🏆 The Round of
-  32 is set" transition banner (`KnockoutBanner`, dismiss once per device via
-  `wc_knockout_banner_2026`) that deep-links to the Bracket tab. App.jsx adds a live
-  pulse on the Bracket tab when `isKnockoutRound(round) && state==='in'`.
+  in api.js = all 72 group fixtures `completed`; it gates the TeamsLeft counter + the
+  knockout-status logic. (The old "Round of 32 is set" transition banner was removed once
+  the knockouts were underway.) App.jsx adds a live pulse on the Bracket tab when
+  `isKnockoutRound(round) && state==='in'`.
 - `src/components/Schedule.jsx` — full schedule grouped by day, team filter
 - `src/components/FifaRank.jsx` + `src/data/fifaRankings.js` — FIFA rank chip (see above)
 - `src/components/WatchNYC.jsx` + `src/data/watchBars.js` + `src/data/watchParties.js`

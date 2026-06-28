@@ -10,6 +10,7 @@ const TOP_N = 10
 // the data loads, so a Polymarket hiccup just hides the card rather than breaking Today.
 export default function TitleRace() {
   const [odds, setOdds] = useState([])
+  const [open, setOpen] = useState(false)
 
   useEffect(() => {
     let alive = true
@@ -32,21 +33,32 @@ export default function TitleRace() {
 
   return (
     <section className="mb-8">
-      <h2 className="mb-1 text-sm font-semibold tracking-wide text-slate-400 uppercase">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        className="flex w-full items-center gap-2 text-sm font-semibold tracking-wide text-slate-400 uppercase"
+      >
         🏆 Title race
-      </h2>
-      <p className="mb-3 text-xs text-slate-500">
-        Implied odds to win the World Cup — live from{' '}
-        <a
-          href="https://polymarket.com"
-          target="_blank"
-          rel="noreferrer"
-          className="text-sky-400 hover:underline"
-        >
-          Polymarket
-        </a>
-        .
-      </p>
+        {!open && (
+          <span className="font-normal normal-case text-slate-500">
+            · {top[0].team} {Math.round(top[0].prob * 100)}% favorite
+          </span>
+        )}
+        <span className={`ml-auto text-base leading-none text-slate-500 transition-transform ${open ? 'rotate-180' : ''}`}>
+          ▾
+        </span>
+      </button>
+      {open && (
+        <p className="mt-1 mb-3 text-xs text-slate-500">
+          Implied odds to win the World Cup — live from{' '}
+          <a href="https://polymarket.com" target="_blank" rel="noreferrer" className="text-sky-400 hover:underline">
+            Polymarket
+          </a>
+          .
+        </p>
+      )}
+      {open && (
       <div className="space-y-1.5 rounded-xl border border-slate-800 bg-slate-900/40 p-3">
         {top.map((row, i) => {
           const mine = HIGHLIGHT.has(row.team)
@@ -79,6 +91,7 @@ export default function TitleRace() {
           )
         })}
       </div>
+      )}
     </section>
   )
 }

@@ -142,13 +142,7 @@ function App() {
         ) : (
           <>
             {tab === 'Today' && (
-              <Today
-                matches={matches}
-                groupMap={groupMap}
-                groups={groups}
-                news={news}
-                onGoToBracket={() => setTab('Bracket')}
-              />
+              <Today matches={matches} groupMap={groupMap} groups={groups} news={news} />
             )}
             {tab === "Pick'em" && <PickEm matches={matches} groupMap={groupMap} />}
             {tab === 'Bars' && <WatchNYC />}
