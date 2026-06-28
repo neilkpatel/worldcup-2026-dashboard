@@ -199,6 +199,25 @@ function knockoutStatus({ teamId, name, standing, groupLetter, matches, thirds }
   }
 }
 
+// Lightweight status lookup the panel uses to drop eliminated teams (mirrors what
+// FollowedTeam computes for itself, just enough to read the tone).
+function followedQual(abbrev, matches, groups, thirds) {
+  let standing = null
+  let groupLetter = null
+  for (const g of groups) {
+    const t = g.teams.find((x) => x.abbrev === abbrev)
+    if (t) {
+      standing = t
+      groupLetter = g.name.replace('Group ', '')
+      break
+    }
+  }
+  const first = matches.find((m) => m.home.abbrev === abbrev || m.away.abbrev === abbrev)
+  const self = first ? (first.home.abbrev === abbrev ? first.home : first.away) : null
+  const teamId = self?.id ?? standing?.id ?? null
+  return knockoutStatus({ teamId, name: self?.name ?? abbrev, standing, groupLetter, matches, thirds })
+}
+
 const isLogistics = (a) => /how to watch|tv channel|live ?stream|kick-off time/i.test(a.headline)
 
 // Best article for a specific game: prefer pieces naming BOTH teams, then any
@@ -729,14 +748,17 @@ function FollowingPanel({ abbrevs, matches, groups }) {
   const present = abbrevs.filter((a) =>
     matches.some((m) => m.home.abbrev === a || m.away.abbrev === a),
   )
-  if (present.length === 0) return null
+  // Knockouts are win-or-go-home: drop a followed team once it's eliminated, so the
+  // panel narrows to who's still alive and hides entirely when they're all out.
+  const alive = present.filter((a) => followedQual(a, matches, groups, thirds)?.tone !== 'out')
+  if (alive.length === 0) return null
   return (
     <section className="mb-8">
       <div className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-emerald-400/80">
         ★ Following
       </div>
       <div className="divide-y divide-emerald-800/30 overflow-hidden rounded-xl border border-emerald-700/40 bg-gradient-to-br from-emerald-950/30 to-slate-900/40">
-        {present.map((a) => (
+        {alive.map((a) => (
           <FollowedTeam key={a} abbrev={a} matches={matches} groups={groups} thirds={thirds} />
         ))}
       </div>
@@ -768,6 +790,15 @@ function FollowedTeam({ abbrev, matches, groups, thirds = [] }) {
   const teamId = me?.id ?? standing?.id ?? null
   const hasLive = mine.some((m) => m.state === 'in')
   const qual = knockoutStatus({ teamId, name: me?.name ?? abbrev, standing, groupLetter, matches, thirds })
+  // Next knockout fixture for this team (drives the at-a-glance pill in the KO phase).
+  const nextKO = mine
+    .filter((m) => m.round !== 'group-stage' && m.state !== 'post')
+    .sort((a, b) => a.date - b.date)[0]
+  const koOpp = nextKO ? (nextKO.home.abbrev === abbrev ? nextKO.away : nextKO.home) : null
+  const koOppName = koOpp ? koOpp.shortName || koOpp.name : ''
+  const koDate = nextKO
+    ? nextKO.date.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })
+    : ''
 
   // Team-specific ESPN headlines for this row (USMNT, Iran, …). Best-effort —
   // a failure just leaves the row without a headlines section.
@@ -840,7 +871,11 @@ function FollowedTeam({ abbrev, matches, groups, thirds = [] }) {
             <span
               className={`mt-1 inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-semibold ${QUAL_TONE[qual.tone].pill}`}
             >
-              {QUAL_TONE[qual.tone].icon} {qual.short}
+              {qual.tone === 'champ'
+                ? '🏆 Champions'
+                : nextKO
+                  ? `⚔️ ${KO_ROUND_NAME[nextKO.round]} · vs ${koOppName} · ${koDate}`
+                  : `${QUAL_TONE[qual.tone].icon} ${qual.short}`}
             </span>
           )}
         </div>
