@@ -11,6 +11,7 @@ import { IRAN_WAR_STATUS } from '../data/iranWarStatus'
 import FifaRank from './FifaRank'
 import WhatsNew from './WhatsNew'
 import TitleRace from './TitleRace'
+import TeamsLeft from './TeamsLeft'
 
 // Lazily fetch per-match recap detail (scorers, stats, headline) for a set of
 // finished matches. Returns { [id]: summary }. Best-effort per match so one bad
@@ -1038,6 +1039,9 @@ export default function Today({ matches, groupMap, groups, news = [], onGoToBrac
 
       {/* ── Group-stage-over → bracket nudge (fires when all 72 group games are final) ── */}
       <KnockoutBanner matches={matches} onGoToBracket={onGoToBracket} />
+
+      {/* ── Big "teams still alive" counter (knockout phase) ── */}
+      <TeamsLeft matches={matches} />
 
       {/* ── Followed teams, pinned (USA, Iran, Norway) — compact collapsible rows ── */}
       <FollowingPanel abbrevs={['USA', 'IRN', 'NOR']} matches={matches} groups={groups} />

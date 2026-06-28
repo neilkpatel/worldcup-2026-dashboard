@@ -160,7 +160,7 @@ function App() {
             )}
             {MyTickets && tab === "Neil's Tickets" && (
               <Suspense fallback={null}>
-                <MyTickets groups={groups} />
+                <MyTickets matches={matches} />
               </Suspense>
             )}
           </>

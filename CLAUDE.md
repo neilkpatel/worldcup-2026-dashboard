@@ -78,7 +78,10 @@ Runs locally at http://localhost:5173 via `npm run dev`.
 - `MyTickets.jsx` imports `prices.json` and renders `PriceBand` (live get-in / range /
   ▲▼ trend / "checked Xm ago" / TickPick + SeatGeek links) + `PriceChart` (get-in-over-time
   line chart from `history[]`) per card. Hidden until the cache is populated, so the public
-  site never shows an empty rail.
+  site never shows an empty rail. Takes `matches` (not `groups`): post-draw it shows each
+  ticket's CONCRETE feeder ties by match number (`feeders:[76,78]` / `[91,92]`) with real
+  teams + ✓ for whoever advanced, followed teams (USA/Norway) bolded — replaced the old
+  group-route scenarios. A feeder that's itself a later round shows "Winner of Match N".
 - **Auto-refresh:** `.github/workflows/refresh-prices.yml` runs `npm run prices` every 6h
   (cron) — and on demand via the Actions "Run workflow" button — then commits `prices.json`
   *only if it changed* and pushes, which triggers a Vercel rebuild. Runs entirely on GitHub
@@ -201,6 +204,13 @@ hand-researched list. Two data files (NOT the old `nycBars.js`, now unused):
   when all are out), and the pill flips from qualification status to the next knockout
   game ("⚔️ Round of 32 · vs <opp> · <date>"). FixtureCard also labels knockout games
   "⚔️ <round> · elimination · Match N" (amber) instead of a qualified team's old group.
+- `src/components/TeamsLeft.jsx` — big "teams still alive" counter at the top of Today
+  (knockout phase only). Counts down by game: 32 − completed main-bracket KO matches
+  (excludes 3rd-place, which eliminates no one new). Remembers the value last seen on the
+  device (`wc_teams_left_seen`) and tweens the DROP since then (e.g. 32→24) with a "▼ N out
+  since your last visit" flourish; honors prefers-reduced-motion. Shows a 🏆 champion hero
+  once the final is decided. Bracket round headers no longer show a bare match count (read
+  as a confusing second number, e.g. "Round of 32 16").
 - `src/components/TitleRace.jsx` + `fetchTitleOdds()` in api.js — "🏆 Title race" card on
   Today: implied championship odds from Polymarket's public "World Cup Winner" market,
   fetched CLIENT-SIDE (gamma API sends `access-control-allow-origin: *`, so no key/proxy —

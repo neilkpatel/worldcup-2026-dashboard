@@ -336,7 +336,6 @@ export default function Bracket({ matches }) {
               }`}
             >
               {ROUND_SHORT[slug]}
-              <span className="ml-1 text-[10px] opacity-70">{inRound(slug).length}</span>
             </button>
           ))}
         </div>
@@ -387,7 +386,6 @@ export default function Bracket({ matches }) {
                 return (
                   <h3 key={slug} className="w-56 shrink-0 text-sm font-semibold text-slate-300">
                     {ROUND_LABEL[slug]}
-                    <span className="ml-1 text-xs font-normal text-slate-600">{n}</span>
                   </h3>
                 )
               })}
