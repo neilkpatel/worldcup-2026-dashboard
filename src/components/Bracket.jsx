@@ -113,7 +113,7 @@ function StatusBit({ match, focus }) {
 
 // Shared compact face: header (Match # · date · 🎟️ · status) + the two team/slot rows.
 function CardFace({ match, focus, mine, isFinal }) {
-  const dateLabel = match.date.toLocaleDateString([], { month: 'short', day: 'numeric' })
+  const dateLabel = match.date.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })
   return (
     <>
       <div className="mb-1 flex items-center justify-between text-[10px] text-slate-500">

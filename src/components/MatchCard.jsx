@@ -24,7 +24,19 @@ const STAKE_STYLE = {
   info: 'border-slate-700 bg-slate-800/50 text-slate-400',
 }
 
+// Knockout round names — these are single-elimination, so flag them as such rather
+// than mislabeling them by a qualified team's old group.
+const ROUND_LABEL = {
+  'round-of-32': 'Round of 32',
+  'round-of-16': 'Round of 16',
+  quarterfinals: 'Quarterfinal',
+  semifinals: 'Semifinal',
+  '3rd-place-match': '3rd-place match',
+  final: 'Final',
+}
+
 export default function MatchCard({ match, groupMap, stakes }) {
+  const isKnockout = !!match.round && match.round !== 'group-stage'
   const group = groupMap[match.home.id]
   const kickoff = match.date.toLocaleTimeString([], {
     hour: 'numeric',
@@ -35,7 +47,17 @@ export default function MatchCard({ match, groupMap, stakes }) {
     <div className="rounded-xl border border-slate-800 bg-slate-900 p-4">
       <div className="mb-3 flex items-center justify-between text-xs text-slate-400">
         <span>
-          {group ? `Group ${group}` : 'Knockout'}
+          {isKnockout ? (
+            <span className="font-semibold text-amber-300">
+              ⚔️ {ROUND_LABEL[match.round] ?? 'Knockout'} · elimination
+              {match.number ? ` · Match ${match.number}` : ''}
+            </span>
+          ) : (
+            <>
+              {group ? `Group ${group}` : 'Match'}
+              {match.number ? ` · Match ${match.number}` : ''}
+            </>
+          )}
           {match.venue && ` · ${match.venue}${match.city ? `, ${match.city}` : ''}`}
         </span>
         {match.state === 'in' ? (
