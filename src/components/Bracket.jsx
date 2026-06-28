@@ -206,7 +206,7 @@ function ListCard({ match, focus, mine, isFinal }) {
 // Measure each card's box and draw an orthogonal connector (child right → midpoint →
 // parent left) for every feeder pair. Recomputed on resize / data change so the lines
 // always track the cards — no dependence on exact CSS spacing.
-function useConnectorPaths(containerRef, cardRefs, matches) {
+function useConnectorPaths(containerRef, cardRefs, matches, viewKey) {
   const [paths, setPaths] = useState([])
   useLayoutEffect(() => {
     const container = containerRef.current
@@ -240,16 +240,18 @@ function useConnectorPaths(containerRef, cardRefs, matches) {
       ro.disconnect()
       window.removeEventListener('resize', compute)
     }
-  }, [matches, containerRef, cardRefs])
+  }, [matches, containerRef, cardRefs, viewKey])
   return paths
 }
 
 export default function Bracket({ matches }) {
   // Mobile shows one round at a time; null = follow the live/current round.
   const [mobileRound, setMobileRound] = useState(null)
+  // Mobile bracket view: 'rounds' (one at a time) or 'tree' (full scrollable bracket).
+  const [mobileView, setMobileView] = useState('rounds')
   const containerRef = useRef(null)
   const cardRefs = useRef({})
-  const paths = useConnectorPaths(containerRef, cardRefs, matches)
+  const paths = useConnectorPaths(containerRef, cardRefs, matches, mobileView)
 
   const inRound = (slug) => matches.filter((m) => m.round === slug)
   // Mobile lists read best in plain match-number order.
@@ -318,11 +320,31 @@ export default function Bracket({ matches }) {
       <p className="mb-4 text-xs text-slate-500">
         Single-elimination from the round of 32 (June 28) to the final (July 19). Slots show
         the qualification path until teams lock in, then fill with flags and scores. On a phone,
-        tap a round below and tap any card for stadium + TV; on a wider screen, follow the lines
-        across the tree (hover a card for details).
+        switch between <span className="text-slate-400">Rounds</span> and the{' '}
+        <span className="text-slate-400">Full bracket</span> below (tap any card for stadium + TV);
+        on a wider screen, follow the lines across the tree (hover a card for details).
       </p>
 
-      {/* ── Mobile: one round at a time, with a switcher + prev/next ── */}
+      {/* ── Mobile view toggle: one round at a time vs the full scrollable bracket ── */}
+      <div className="mb-3 flex gap-1 sm:hidden">
+        {[
+          ['rounds', 'Rounds'],
+          ['tree', 'Full bracket'],
+        ].map(([key, label]) => (
+          <button
+            key={key}
+            onClick={() => setMobileView(key)}
+            className={`flex-1 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${
+              mobileView === key ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-slate-400'
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {/* ── Mobile · rounds: one round at a time, with a switcher + prev/next ── */}
+      {mobileView === 'rounds' && (
       <div className="sm:hidden">
         <div className="-mx-1 mb-3 flex gap-1 overflow-x-auto px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {available.map((slug) => (
@@ -373,9 +395,10 @@ export default function Bracket({ matches }) {
           ))}
         </div>
       </div>
+      )}
 
-      {/* ── Desktop: full bracket tree with connector lines ── */}
-      <div className="hidden sm:block">
+      {/* ── Full bracket tree (desktop always; mobile when "Full bracket" is picked) ── */}
+      <div className={mobileView === 'tree' ? 'block' : 'hidden sm:block'}>
         <div className="overflow-x-auto pb-2">
           <div className="inline-block min-w-max">
             {/* Round headers, aligned above their columns */}

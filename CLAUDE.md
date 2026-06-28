@@ -226,9 +226,12 @@ hand-researched list. Two data files (NOT the old `nycBars.js`, now unused):
   columns ordered by bracket position (`TREE_ORDER`, since FIFA's match numbers aren't
   bracket-adjacent), `justify-around` columns so each match centers between its two
   feeders, and an SVG overlay (`useConnectorPaths`, measures card rects) draws the
-  connector lines from `FEEDERS`. MOBILE shows ONE round at a time via a
-  R32/R16/QF/SF/3rd/Final switcher (numeric order, prev/next + date range, tap a card
-  for venue/TV). Compact uniform cards (details on hover/tap). Spotlights the live game
+  connector lines from `FEEDERS`. MOBILE has a `mobileView` toggle: "Rounds" (one round
+  at a time via a R32/R16/QF/SF/3rd/Final switcher, numeric order, prev/next + date range,
+  tap a card for venue/TV) or "Full bracket" (the same scrollable connector tree as
+  desktop, for the holistic view). The tree renders once and is shown on desktop always /
+  on mobile when toggled; `mobileView` is passed to `useConnectorPaths` so the SVG lines
+  recompute when it becomes visible. Compact uniform cards (details on hover/tap). Spotlights the live game
   (or next to kick off) with an emerald ring + "NEXT UP"; flags Neil's tickets (91, 99)
   with 🎟️; Final gets gold accent + a champion banner once decided.
 - Knockout activation is DATA-DRIVEN, not date-hardcoded: `groupStageComplete(matches)`
