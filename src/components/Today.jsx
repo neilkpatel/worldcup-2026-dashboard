@@ -132,6 +132,9 @@ function knockoutStatus({ teamId, name, standing, groupLetter, matches, thirds }
     )
     .sort((a, b) => a.date - b.date)
   const groupDone = remaining.length === 0
+  // The 8-best-thirds cutoff is only final once EVERY group is done, so a 3rd-place
+  // verdict stays provisional until then, then becomes a hard qualified/eliminated.
+  const allDone = groupStageComplete(matches)
   const rank = standing.rank
   const nextGame = remaining[0]
   const oppName = nextGame ? (nextGame.home.id === teamId ? nextGame.away.name : nextGame.home.name) : null
@@ -158,18 +161,33 @@ function knockoutStatus({ teamId, name, standing, groupLetter, matches, thirds }
   if (rank === 3) {
     const me = thirds.find((t) => t.id === teamId)
     const place = me ? ordinal(me.position) : '—'
-    if (me?.qualifying) {
-      return {
-        tone: 'track',
-        short: 'On track for Round of 32',
-        detail: `${name} is 3rd in Group ${groupLetter}. Each group's top 2 go through automatically, and the last 8 spots go to the best of the 12 third-placed teams — ${name} is ${place} of those 12 right now, inside the top 8, so it would qualify if that holds once the final groups finish${!groupDone && oppName ? ` (plays ${oppName} next)` : ''}.`,
-      }
+    const qualifies = !!me?.qualifying
+    // Group stage over → the third-place table is locked, so give a final verdict.
+    if (allDone) {
+      return qualifies
+        ? {
+            tone: 'in',
+            short: 'Qualified · Round of 32',
+            detail: `${name} finished 3rd in Group ${groupLetter} and ${place} of the 12 third-placed teams — among the 8 best, so it's through to the Round of 32.`,
+          }
+        : {
+            tone: 'out',
+            short: 'Eliminated',
+            detail: `${name} finished 3rd in Group ${groupLetter} and ${place} of the 12 third-placed teams — only the 8 best advanced, so it's out.`,
+          }
     }
-    return {
-      tone: 'risk',
-      short: 'Just missing the cut',
-      detail: `${name} is 3rd in Group ${groupLetter}. The last 8 Round-of-32 spots go to the best of the 12 third-placed teams — ${name} is ${place} of those 12 right now, just outside the top 8, so it needs a third-placed team above it to slip as the remaining groups play${!groupDone && oppName ? ` (plays ${oppName} next)` : ''}.`,
-    }
+    // Groups still running → provisional, with what still has to happen.
+    return qualifies
+      ? {
+          tone: 'track',
+          short: 'On track for Round of 32',
+          detail: `${name} is 3rd in Group ${groupLetter}. Each group's top 2 go through automatically, and the last 8 spots go to the best of the 12 third-placed teams — ${name} is ${place} of those 12 right now, inside the top 8, so it would qualify if that holds once the final groups finish${!groupDone && oppName ? ` (plays ${oppName} next)` : ''}.`,
+        }
+      : {
+          tone: 'risk',
+          short: 'Just missing the cut',
+          detail: `${name} is 3rd in Group ${groupLetter}. The last 8 Round-of-32 spots go to the best of the 12 third-placed teams — ${name} is ${place} of those 12 right now, just outside the top 8, so it needs a third-placed team above it to slip as the remaining groups play${!groupDone && oppName ? ` (plays ${oppName} next)` : ''}.`,
+        }
   }
 
   return {
@@ -519,7 +537,13 @@ function FixtureCard({ m, group, standingMap, summary }) {
       )}
       <div className="mb-2 flex items-center justify-between">
         <span className="rounded bg-slate-800 px-1.5 py-0.5 text-[10px] font-medium text-slate-400">
-          {group ? `Group ${group}` : 'Knockout'}
+          {m.round && m.round !== 'group-stage' ? (
+            <span className="font-semibold text-amber-300">⚔️ {KO_ROUND_NAME[m.round] ?? 'Knockout'} · elimination</span>
+          ) : group ? (
+            `Group ${group}`
+          ) : (
+            'Match'
+          )}
           {m.number ? <span className="text-slate-500"> · Match {m.number}</span> : null}
         </span>
         <StatusPill m={m} />
