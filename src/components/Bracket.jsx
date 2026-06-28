@@ -50,13 +50,16 @@ const FEEDERS = {
   104: [101, 102],
 }
 
-// FIFA numbers knockouts by schedule slot, NOT bracket position, so numeric order
-// would make feeders non-adjacent and the connector lines cross. This is the order
-// to stack each column (top→bottom) so every feeding pair sits next to each other and
-// each parent lands centered between its two children. Derived from FEEDERS.
+// FIFA numbers knockouts by schedule slot, NOT bracket position, so numeric/date order
+// would make feeders non-adjacent and the connector lines cross. This is the order to
+// stack each column (top→bottom) so every feeding pair sits next to each other and each
+// parent lands centered between its children. Within that hard constraint it's ordered
+// to read as chronologically as possible from the top (opener Match 73 leads) — the two
+// halves of the draw interleave by date, so it can't be fully chronological. Derived
+// from FEEDERS; kept consistent across rounds so the SVG connectors don't cross.
 const TREE_ORDER = {
-  'round-of-32': [74, 77, 73, 75, 83, 84, 81, 82, 76, 78, 79, 80, 86, 88, 85, 87],
-  'round-of-16': [89, 90, 93, 94, 91, 92, 95, 96],
+  'round-of-32': [73, 75, 74, 77, 81, 82, 83, 84, 76, 78, 79, 80, 85, 87, 86, 88],
+  'round-of-16': [90, 89, 94, 93, 91, 92, 96, 95],
   quarterfinals: [97, 98, 99, 100],
   semifinals: [101, 102],
   final: [104],
