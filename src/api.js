@@ -214,6 +214,38 @@ export async function fetchTeamNews(teamId, limit = 6) {
     .filter((a) => a.headline && a.link)
 }
 
+// Championship odds from Polymarket's public "World Cup Winner" market — each team's
+// implied win probability (the "Yes" price). Fetched straight from the browser: the
+// gamma API sends `access-control-allow-origin: *`, so no key/proxy is needed. Returns
+// teams sorted most→least likely. Best-effort — caller treats failure as "no odds".
+const POLYMARKET_EVENTS = 'https://gamma-api.polymarket.com/events'
+export async function fetchTitleOdds() {
+  const res = await fetch(
+    `${POLYMARKET_EVENTS}?closed=false&limit=40&order=volume&ascending=false&tag=World%20Cup`,
+  )
+  if (!res.ok) throw new Error(`polymarket request failed: ${res.status}`)
+  const data = await res.json()
+  const event = (Array.isArray(data) ? data : []).find(
+    (e) => (e.title || '').trim().toLowerCase() === 'world cup winner',
+  )
+  if (!event) return []
+  const rows = []
+  for (const m of event.markets ?? []) {
+    const team = m.groupItemTitle || m.question
+    let prices = m.outcomePrices
+    if (typeof prices === 'string') {
+      try {
+        prices = JSON.parse(prices)
+      } catch {
+        prices = null
+      }
+    }
+    const prob = Array.isArray(prices) && prices.length ? Number(prices[0]) : null
+    if (team && prob != null && Number.isFinite(prob) && prob > 0) rows.push({ team, prob })
+  }
+  return rows.sort((a, b) => b.prob - a.prob)
+}
+
 // Turn ESPN's HTML article body into clean paragraph text (blank-line separated).
 function htmlToText(html) {
   if (!html) return ''

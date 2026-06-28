@@ -201,6 +201,11 @@ hand-researched list. Two data files (NOT the old `nycBars.js`, now unused):
   when all are out), and the pill flips from qualification status to the next knockout
   game ("⚔️ Round of 32 · vs <opp> · <date>"). FixtureCard also labels knockout games
   "⚔️ <round> · elimination · Match N" (amber) instead of a qualified team's old group.
+- `src/components/TitleRace.jsx` + `fetchTitleOdds()` in api.js — "🏆 Title race" card on
+  Today: implied championship odds from Polymarket's public "World Cup Winner" market,
+  fetched CLIENT-SIDE (gamma API sends `access-control-allow-origin: *`, so no key/proxy —
+  Option A). Best-effort (hides if the fetch fails), top 10 teams with bars, followed teams
+  (USA/Norway) bolded. Refreshes every 10 min.
 - `src/components/ResultCard.jsx` — per-match analysis card; body prefers a Claude
   verdict, else ESPN's own match report (`summary.story`), else a template
 - `src/components/GoldenBoot.jsx` — top-scorer leaderboard (own tab)

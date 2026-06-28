@@ -10,6 +10,7 @@ import reports from '../data/reports.json'
 import { IRAN_WAR_STATUS } from '../data/iranWarStatus'
 import FifaRank from './FifaRank'
 import WhatsNew from './WhatsNew'
+import TitleRace from './TitleRace'
 
 // Lazily fetch per-match recap detail (scorers, stats, headline) for a set of
 // finished matches. Returns { [id]: summary }. Best-effort per match so one bad
@@ -1064,6 +1065,9 @@ export default function Today({ matches, groupMap, groups, news = [], onGoToBrac
           No upcoming matches — the tournament is over.
         </p>
       )}
+
+      {/* ── Title race (Polymarket championship odds) ── */}
+      <TitleRace />
 
       {/* ── Latest results ── */}
       <LatestResults matches={recapMatches} standingMap={standingMap} />
