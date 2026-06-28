@@ -630,8 +630,11 @@ function Scores({ title, matches, groupMap, standingMap, highlight = false }) {
   const summaries = useMatchSummaries(matches.filter((m) => m.state === 'pre' || m.state === 'in'))
   if (matches.length === 0) return null
   const ordered = [...matches].sort(byWatchOrder)
+  // One game (common in the knockouts) shouldn't stretch into a half-empty row — keep
+  // it a single, normal-width card; two or more flow into the 2-col grid.
+  const single = ordered.length === 1
   const grid = (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+    <div className={`grid gap-3 ${single ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2'}`}>
       {ordered.map((m) => (
         <FixtureCard key={m.id} m={m} group={groupMap[m.home.id]} standingMap={standingMap} summary={summaries[m.id]} />
       ))}
@@ -643,9 +646,13 @@ function Scores({ title, matches, groupMap, standingMap, highlight = false }) {
         {title}
       </h2>
       {highlight ? (
-        <div className="today-box rounded-2xl border border-emerald-500/40 bg-emerald-950/15 p-2.5 sm:p-3">
+        <div
+          className={`today-box rounded-2xl border border-emerald-500/40 bg-emerald-950/15 p-2.5 sm:p-3 ${single ? 'sm:max-w-md' : ''}`}
+        >
           {grid}
         </div>
+      ) : single ? (
+        <div className="sm:max-w-md">{grid}</div>
       ) : (
         grid
       )}
@@ -1040,44 +1047,46 @@ export default function Today({ matches, groupMap, groups, news = [], onGoToBrac
       {/* ── Group-stage-over → bracket nudge (fires when all 72 group games are final) ── */}
       <KnockoutBanner matches={matches} onGoToBracket={onGoToBracket} />
 
-      {/* ── Big "teams still alive" counter (knockout phase) ── */}
-      <TeamsLeft matches={matches} />
+      {/* Two-column dashboard on wide screens: tracking sidebar (right) + game feed
+          (left). Below lg it collapses to one column with the sidebar leading, so the
+          counter still opens the page on mobile. */}
+      <div className="lg:grid lg:grid-cols-3 lg:items-start lg:gap-6">
+        {/* ── Tracking sidebar: counter, followed teams, title race ── */}
+        <aside className="lg:order-2 lg:col-span-1">
+          <TeamsLeft matches={matches} />
+          <FollowingPanel abbrevs={['USA', 'IRN', 'NOR']} matches={matches} groups={groups} />
+          <TitleRace />
+        </aside>
 
-      {/* ── Followed teams, pinned (USA, Iran, Norway) — compact collapsible rows ── */}
-      <FollowingPanel abbrevs={['USA', 'IRN', 'NOR']} matches={matches} groups={groups} />
+        {/* ── Game feed: today's fixtures → latest results → news ── */}
+        <div className="lg:order-1 lg:col-span-2">
+          {todayMatches.length > 0 ? (
+            <Scores
+              title={`⚽ Today · ${dateLabel(now)}`}
+              matches={todayMatches}
+              groupMap={groupMap}
+              standingMap={standingMap}
+              highlight
+            />
+          ) : nextDayMatches.length > 0 ? (
+            <Scores
+              title={`⏭ Next up · ${nextLabel}`}
+              matches={nextDayMatches}
+              groupMap={groupMap}
+              standingMap={standingMap}
+            />
+          ) : null}
 
-      {/* ── Today's fixtures (or the next slate on off-days) ── */}
-      {todayMatches.length > 0 ? (
-        <Scores
-          title={`⚽ Today · ${dateLabel(now)}`}
-          matches={todayMatches}
-          groupMap={groupMap}
-          standingMap={standingMap}
-          highlight
-        />
-      ) : nextDayMatches.length > 0 ? (
-        <Scores
-          title={`⏭ Next up · ${nextLabel}`}
-          matches={nextDayMatches}
-          groupMap={groupMap}
-          standingMap={standingMap}
-        />
-      ) : null}
+          {tournamentOver && (
+            <p className="py-16 text-center text-slate-500">
+              No upcoming matches — the tournament is over.
+            </p>
+          )}
 
-      {tournamentOver && (
-        <p className="py-16 text-center text-slate-500">
-          No upcoming matches — the tournament is over.
-        </p>
-      )}
-
-      {/* ── Title race (Polymarket championship odds) ── */}
-      <TitleRace />
-
-      {/* ── Latest results ── */}
-      <LatestResults matches={recapMatches} standingMap={standingMap} />
-
-      {/* ── News last ── */}
-      <News previews={previews} headlines={headlineItems} />
+          <LatestResults matches={recapMatches} standingMap={standingMap} />
+          <News previews={previews} headlines={headlineItems} />
+        </div>
+      </div>
 
       <Explainer />
     </div>
