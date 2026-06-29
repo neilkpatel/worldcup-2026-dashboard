@@ -40,7 +40,7 @@ export default function TitleRace() {
         className="flex w-full items-center gap-2 rounded-xl border border-slate-800 bg-slate-900/40 px-4 py-2.5 text-left transition-colors hover:border-emerald-600/40 hover:bg-slate-900/70"
       >
         <span className="shrink-0 text-sm font-semibold tracking-wide text-slate-300 uppercase">
-          🏆 Title race
+          🏆 Betting odds
         </span>
         {!open && (
           <span className="truncate text-xs text-slate-500">
