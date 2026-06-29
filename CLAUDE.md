@@ -204,12 +204,11 @@ hand-researched list. Two data files (NOT the old `nycBars.js`, now unused):
   when all are out), and the pill flips from qualification status to the next knockout
   game ("⚔️ Round of 32 · vs <opp> · <date>"). FixtureCard also labels knockout games
   "⚔️ <round> · elimination · Match N" (amber) instead of a qualified team's old group.
-- Today layout (knockout phase): a full-width "teams still alive" counter HERO at the very
-  top, then a 2-col dashboard — game feed (today's match → latest results → news) on the
-  left, tracking sidebar (followed teams + collapsed Title race) on the right. Mobile stacks
-  counter → game → … so today's match is in the top frame. The old "Round of 32 is set"
-  banner was removed. Only the counter (and a live game) animate — today's-games frame is
-  static now — to keep the page calm/quick-to-read.
+- Today layout (knockout phase), top → bottom: full-width "teams still alive" counter HERO
+  → full-width collapsed Title race bar (tap to expand) → 2-col dashboard with the game feed
+  (today's match → latest results → news) on the left and followed teams on the right. Mobile
+  stacks counter → odds bar → game → … The old "Round of 32 is set" banner was removed. Only
+  the counter (and a live game) animate — today's-games frame is static — to stay calm/quick.
 - `src/components/TeamsLeft.jsx` — the counter hero. Counts down by game: 32 − completed
   main-bracket KO matches (excludes 3rd-place). Remembers the value last seen on the device
   (`wc_teams_left_seen`) and tweens the DROP since then (e.g. 32→31) with a "▼ N out since
@@ -218,9 +217,10 @@ hand-researched list. Two data files (NOT the old `nycBars.js`, now unused):
   no longer show a bare match count.)
 - `src/components/TitleRace.jsx` + `fetchTitleOdds()` in api.js — "🏆 Title race": implied
   championship odds from Polymarket's public "World Cup Winner" market, fetched CLIENT-SIDE
-  (gamma API sends `access-control-allow-origin: *`, no key/proxy). COLLAPSED by default —
-  the header shows the leader inline ("· France 23% favorite"); click to expand the top-10
-  bars (followed teams bolded). Best-effort (hides if the fetch fails), refreshes every 10 min.
+  (gamma API sends `access-control-allow-origin: *`, no key/proxy). Full-width bar directly
+  under the counter, COLLAPSED by default — shows the leader inline ("· France 23% favorite")
+  with an explicit "Tap to expand ▾" cue; expands to the top-10 bars (followed teams bolded),
+  toggle reads "Hide ▴". Best-effort (hides if the fetch fails), refreshes every 10 min.
 - `src/components/ResultCard.jsx` — per-match analysis card; body prefers a Claude
   verdict, else ESPN's own match report (`summary.story`), else a template
 - `src/components/GoldenBoot.jsx` — top-scorer leaderboard (own tab)

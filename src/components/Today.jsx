@@ -1005,9 +1005,11 @@ export default function Today({ matches, groupMap, groups, news = [] }) {
       {/* ── Big "teams still alive" counter — full-width hero with a flashing border ── */}
       <TeamsLeft matches={matches} />
 
-      {/* Two-column dashboard on wide screens: game feed (left) + tracking sidebar
-          (right). On mobile it stacks game-first, so today's match is in the top frame
-          right under the counter. */}
+      {/* ── Title race (Polymarket odds) — full-width, collapsed; tap to expand ── */}
+      <TitleRace />
+
+      {/* Two-column dashboard on wide screens: game feed (left) + followed teams (right).
+          On mobile it stacks game-first under the counter + odds bar. */}
       <div className="lg:grid lg:grid-cols-3 lg:items-start lg:gap-6">
         {/* ── Game feed: today's fixtures → latest results → news ── */}
         <div className="lg:order-1 lg:col-span-2">
@@ -1038,10 +1040,9 @@ export default function Today({ matches, groupMap, groups, news = [] }) {
           <News previews={previews} headlines={headlineItems} />
         </div>
 
-        {/* ── Tracking sidebar: followed teams + title race (collapsed) ── */}
+        {/* ── Followed teams ── */}
         <aside className="lg:order-2 lg:col-span-1">
           <FollowingPanel abbrevs={['USA', 'IRN', 'NOR']} matches={matches} groups={groups} />
-          <TitleRace />
         </aside>
       </div>
 

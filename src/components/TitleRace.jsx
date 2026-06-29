@@ -32,25 +32,28 @@ export default function TitleRace() {
   const max = top[0].prob
 
   return (
-    <section className="mb-8">
+    <section className="mb-6">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
-        className="flex w-full items-center gap-2 text-sm font-semibold tracking-wide text-slate-400 uppercase"
+        className="flex w-full items-center gap-2 rounded-xl border border-slate-800 bg-slate-900/40 px-4 py-2.5 text-left transition-colors hover:border-emerald-600/40 hover:bg-slate-900/70"
       >
-        🏆 Title race
+        <span className="shrink-0 text-sm font-semibold tracking-wide text-slate-300 uppercase">
+          🏆 Title race
+        </span>
         {!open && (
-          <span className="font-normal normal-case text-slate-500">
+          <span className="truncate text-xs text-slate-500">
             · {top[0].team} {Math.round(top[0].prob * 100)}% favorite
           </span>
         )}
-        <span className={`ml-auto text-base leading-none text-slate-500 transition-transform ${open ? 'rotate-180' : ''}`}>
-          ▾
+        <span className="ml-auto flex shrink-0 items-center gap-1 text-xs font-semibold text-emerald-400">
+          {open ? 'Hide' : 'Tap to expand'}
+          <span className={`transition-transform ${open ? 'rotate-180' : ''}`}>▾</span>
         </span>
       </button>
       {open && (
-        <p className="mt-1 mb-3 text-xs text-slate-500">
+        <p className="mt-2 mb-2 text-xs text-slate-500">
           Implied odds to win the World Cup — live from{' '}
           <a href="https://polymarket.com" target="_blank" rel="noreferrer" className="text-sky-400 hover:underline">
             Polymarket
