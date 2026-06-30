@@ -4,6 +4,10 @@
 Re-runnable: just `python3 scripts/generate-og.py`. Writes public/og.png
 (1200x630), which Vite copies to the deploy root and index.html points at
 via og:image / twitter:image.
+
+Design: a clean, centered composition — a glowing soccer ball over a deep
+emerald->black gradient, with "WORLD CUP 2026 / DASHBOARD · by Neil" and a
+one-line gag. Deliberately decluttered (no kicker line, no tag chips).
 """
 import math
 import os
@@ -16,6 +20,14 @@ FONTS = "/System/Library/Fonts/Supplemental"
 BLACK = os.path.join(FONTS, "Arial Black.ttf")
 BOLD = os.path.join(FONTS, "Arial Bold.ttf")
 REG = os.path.join(FONTS, "Arial.ttf")
+ITAL = os.path.join(FONTS, "Arial Italic.ttf")
+
+GOLD = (255, 209, 102)
+WHITE = (255, 255, 255)
+ACCENT = (52, 211, 153)  # emerald, matches the site
+
+# The gag line under the title (Neil's inside joke). Swap freely.
+TAGLINE = "We organize the tables. The drama organizes itself."
 
 
 def font(path, size):
@@ -26,90 +38,83 @@ def lerp(a, b, t):
     return tuple(int(a[i] + (b[i] - a[i]) * t) for i in range(3))
 
 
-img = Image.new("RGB", (W, H), (8, 40, 26))
-d = ImageDraw.Draw(img)
-
-# Vertical pitch gradient (deep green -> brighter emerald)
-top, bot = (6, 38, 24), (16, 89, 58)
-for y in range(H):
-    d.line([(0, y), (W, y)], fill=lerp(top, bot, y / H))
-
-# Subtle mowed-pitch stripes
-stripe = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-sd = ImageDraw.Draw(stripe)
-sw = W // 8
-for i in range(0, 8, 2):
-    sd.rectangle([i * sw, 0, (i + 1) * sw, H], fill=(255, 255, 255, 10))
-img = Image.alpha_composite(img.convert("RGBA"), stripe).convert("RGB")
-d = ImageDraw.Draw(img)
-
-# Faint center-circle field marking on the right side
-cx, cy, r = 960, 315, 250
-d.ellipse([cx - r, cy - r, cx + r, cy + r], outline=(255, 255, 255, 60), width=4)
-d.line([(cx, cy - r), (cx, cy + r)], fill=(255, 255, 255), width=0)
+def ctext(d, cx, y, text, fnt, fill):
+    """Draw text horizontally centered on cx."""
+    w = d.textlength(text, font=fnt)
+    d.text((cx - w / 2, y), text, font=fnt, fill=fill)
+    return w
 
 
 def soccer_ball(draw, cx, cy, R):
     """A clean classic soccer ball: white sphere with a black pentagon hub."""
-    draw.ellipse([cx - R, cy - R, cx + R, cy + R], fill=(255, 255, 255),
-                 outline=(20, 20, 20), width=6)
+    draw.ellipse([cx - R, cy - R, cx + R, cy + R], fill=WHITE,
+                 outline=(20, 20, 20), width=max(4, R // 22))
 
     def pent(ccx, ccy, rad, rot=-90):
-        return [
-            (ccx + rad * math.cos(math.radians(rot + a)),
-             ccy + rad * math.sin(math.radians(rot + a)))
-            for a in range(0, 360, 72)
-        ]
+        return [(ccx + rad * math.cos(math.radians(rot + a)),
+                 ccy + rad * math.sin(math.radians(rot + a)))
+                for a in range(0, 360, 72)]
 
     hub = pent(cx, cy, R * 0.32)
     draw.polygon(hub, fill=(17, 17, 17))
-    # Seams radiating out to the rim
     for px, py in hub:
         ang = math.atan2(py - cy, px - cx)
         ex, ey = cx + R * 0.95 * math.cos(ang), cy + R * 0.95 * math.sin(ang)
-        draw.line([(px, py), (ex, ey)], fill=(17, 17, 17), width=5)
-    # Small outer pentagons between the seams
+        draw.line([(px, py), (ex, ey)], fill=(17, 17, 17), width=max(3, R // 30))
     for a in range(0, 360, 72):
         ox = cx + R * 0.66 * math.cos(math.radians(-90 + 36 + a))
         oy = cy + R * 0.66 * math.sin(math.radians(-90 + 36 + a))
         draw.polygon(pent(ox, oy, R * 0.16, rot=90), fill=(17, 17, 17))
 
 
-soccer_ball(d, 960, 315, 150)
+# --- background: deep emerald -> near-black vertical gradient ---
+top, bot = (12, 33, 26), (3, 10, 9)
+img = Image.new("RGB", (W, H), bot)
+d = ImageDraw.Draw(img)
+for y in range(H):
+    d.line([(0, y), (W, y)], fill=lerp(top, bot, (y / H) ** 1.1))
 
-# --- Text block (left) ---
-GOLD = (255, 209, 102)
-WHITE = (255, 255, 255)
+cx, cy, R = 600, 205, 130
 
-# Kicker
-kf = font(BOLD, 30)
-d.text((70, 92), "FIFA  ·  USA · CANADA · MEXICO", font=kf, fill=GOLD)
+# soft radial glow behind the ball
+glow = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+gd = ImageDraw.Draw(glow)
+for rad in range(int(R * 2.3), R, -6):
+    a = int(9 * (1 - (rad - R) / (R * 1.3)))
+    gd.ellipse([cx - rad, cy - rad, cx + rad, cy + rad], fill=ACCENT + (max(0, a),))
+img = Image.alpha_composite(img.convert("RGBA"), glow).convert("RGB")
+d = ImageDraw.Draw(img)
 
-# Headline
-hf = font(BLACK, 118)
-d.text((66, 132), "WORLD", font=hf, fill=WHITE)
-d.text((66, 250), "CUP", font=hf, fill=WHITE)
-yf = font(BLACK, 118)
-# "2026" in gold, to the right of CUP
-cup_w = d.textlength("CUP", font=hf)
-d.text((66 + cup_w + 30, 250), "2026", font=yf, fill=GOLD)
+# faint center-circle ring framing the ball
+rr = int(R * 1.65)
+d.ellipse([cx - rr, cy - rr, cx + rr, cy + rr], outline=ACCENT, width=2)
 
-# "by Neil" signature
-sf = font(BOLD, 56)
-d.text((70, 392), "by Neil", font=sf, fill=GOLD)
+# drop shadow + ball
+sh = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+ImageDraw.Draw(sh).ellipse([cx - R, cy - R + 12, cx + R, cy + R + 12], fill=(0, 0, 0, 80))
+img = Image.alpha_composite(img.convert("RGBA"), sh).convert("RGB")
+d = ImageDraw.Draw(img)
+soccer_ball(d, cx, cy, R)
 
-# Tagline chips
-chip_f = font(BOLD, 26)
-chips = ["Live scores", "Groups", "Bracket", "Golden Boot"]
-x = 70
-y = 500
-for c in chips:
-    tw = d.textlength(c, font=chip_f)
-    pad = 22
-    d.rounded_rectangle([x, y, x + tw + pad * 2, y + 52], radius=26,
-                        fill=None, outline=WHITE, width=3)
-    d.text((x + pad, y + 11), c, font=chip_f, fill=WHITE)
-    x += tw + pad * 2 + 16
+# --- title: WORLD CUP 2026 (2026 in gold), centered ---
+tf = font(BLACK, 90)
+ww = d.textlength("WORLD CUP ", font=tf)
+yw = d.textlength("2026", font=tf)
+x = cx - (ww + yw) / 2
+d.text((x, 366), "WORLD CUP ", font=tf, fill=WHITE)
+d.text((x + ww, 366), "2026", font=tf, fill=GOLD)
+
+# subtitle: DASHBOARD  ·  by Neil  (centered as one group)
+sf = font(BOLD, 32)
+parts = [("DASHBOARD", GOLD), ("   ·   ", (120, 140, 150)), ("by Neil", WHITE)]
+gw = sum(d.textlength(t, font=sf) for t, _ in parts)
+x = cx - gw / 2
+for t, col in parts:
+    d.text((x, 470), t, font=sf, fill=col)
+    x += d.textlength(t, font=sf)
+
+# the gag line
+ctext(d, cx, 535, TAGLINE, font(ITAL, 29), (140, 160, 175))
 
 img.save(OUT, "PNG")
 print(f"wrote {os.path.abspath(OUT)}  ({os.path.getsize(OUT)//1024} KB)")

@@ -12,11 +12,39 @@ Runs locally at http://localhost:5173 via `npm run dev`.
 - DNS for the subdomain: Dreamhost (neilkpatel.com NS) → `A worldcup → 76.76.21.21`.
 
 ## Social share card (og:image)
-- `scripts/generate-og.py` (Pillow) renders `public/og.png` (1200×630,
-  "World Cup 2026 — by Neil"). Re-run: `python3 scripts/generate-og.py`.
-- `index.html` carries the Open Graph + Twitter meta tags; `og:image` is the
-  absolute `https://worldcup.neilkpatel.com/og.png`. Vite copies `public/og.png`
-  to the deploy root even under `viteSingleFile`.
+- `scripts/generate-og.py` (Pillow) renders `public/og.png` (1200×630). Re-run:
+  `python3 scripts/generate-og.py`. **Design** (redesigned Jun 2026 — was a busy
+  left-aligned card): clean CENTERED composition — a glowing soccer ball on a deep
+  emerald→black gradient, "WORLD CUP 2026" (2026 in gold), "DASHBOARD · by Neil",
+  and a one-line gag (`TAGLINE` const, currently the "we organize the tables / the
+  drama organizes itself" inside joke). Deliberately decluttered: no kicker line,
+  no tag chips. Edit `TAGLINE` to swap the joke.
+- `index.html` carries the Open Graph + Twitter meta tags; title is "World Cup 2026
+  Dashboard — by Neil"; `og:image` is `…/og.png?v=YYYYMMDD` — **bump the `?v=` when
+  you regenerate og.png** so iMessage/X/LinkedIn refetch instead of serving a cached
+  card. Vite copies `public/og.png` to the deploy root even under `viteSingleFile`.
+
+## Visit analytics + hidden owner-stats panel
+- **Vercel Web Analytics:** `@vercel/analytics` `<Analytics/>` mounts in `App.jsx`
+  (the project toggle was already on but no script shipped, so it collected nothing
+  until Jun 2026). Full dashboard — visitors / referrers / countries / top pages,
+  bot-filtered — at vercel.com → project `worldcup-2026-dashboard` → Analytics.
+  (Vercel's analytics *read* API is browser-session-gated; a CLI token 404s, so the
+  in-app panel below can't reuse it — hence the self-hosted counter.)
+- **Hidden owner panel:** tap the ⚽ logo **5× within ~1.2s/tap** to unlock
+  `StatsPanel` (`src/components/StatsPanel.jsx`) — total views / unique devices /
+  today / last-7d + a 30-day sparkline + a deep link to the Vercel dashboard. Silent
+  by design (no pointer cursor) so casual visitors don't find it; closes on ✕/Esc/backdrop.
+- **Self-hosted counter:** reuses the existing `worldcup-picks` Supabase. `src/lib/visits.js`
+  → `trackVisit()` (called once on mount; localStorage flag `wc_visit_<YYYY-MM-DD>` marks a
+  device unique-per-day) POSTs to the `track_visit(is_unique bool)` RPC; `fetchVisitStats()`
+  reads the aggregate `site_visits` table.
+  - Schema (via Supabase Management API, project ref `hufgsqlyaolefwhtvbub`): table
+    `public.site_visits(day date pk, views bigint, uniques bigint)`; RLS on with an open
+    **SELECT** policy for anon; writes only through the **SECURITY DEFINER** `track_visit`
+    function (anon has no direct table write). So the counts are public-readable (vanity
+    metric, not sensitive) but un-spoofable except via the +1 RPC — same trust model as Pick'em.
+  - Counts raw pageviews incl. bots; for clean human numbers use the Vercel dashboard.
 
 ## Stack
 - Vite + React 19 + Tailwind v4 (`@tailwindcss/vite` plugin)
