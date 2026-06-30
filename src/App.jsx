@@ -1,5 +1,8 @@
-import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
+import { Analytics } from '@vercel/analytics/react'
 import { fetchSchedule, fetchStandings, fetchNews, buildGroupMap, isKnockoutRound } from './api'
+import StatsPanel from './components/StatsPanel'
+import { trackVisit } from './lib/visits'
 import Today from './components/Today'
 import Groups from './components/Groups'
 import GoldenBoot from './components/GoldenBoot'
@@ -36,6 +39,27 @@ function App() {
   const [updatedAt, setUpdatedAt] = useState(null)
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(true)
+
+  // Hidden owner-stats panel: tap the ⚽ logo 5× (within ~1.2s of each tap) to
+  // unlock. Kept silent (no pointer cursor) so casual visitors never find it.
+  const [showStats, setShowStats] = useState(false)
+  const logoTaps = useRef(0)
+  const logoTimer = useRef(null)
+  function handleLogoTap() {
+    logoTaps.current += 1
+    clearTimeout(logoTimer.current)
+    if (logoTaps.current >= 5) {
+      logoTaps.current = 0
+      setShowStats(true)
+      return
+    }
+    logoTimer.current = setTimeout(() => (logoTaps.current = 0), 1200)
+  }
+
+  // Count this page load once (self-hosted counter; powers the panel above).
+  useEffect(() => {
+    trackVisit()
+  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -76,7 +100,10 @@ function App() {
       <header className="sticky top-0 z-10 border-b border-slate-800 bg-slate-950/90 backdrop-blur">
         <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-4">
           <h1 className="text-xl font-bold tracking-tight">
-            <span className="mr-2">⚽</span>World Cup 2026
+            <span className="mr-2 select-none" onClick={handleLogoTap}>
+              ⚽
+            </span>
+            World Cup 2026
           </h1>
           {liveCount > 0 && (
             <span className="flex items-center gap-1.5 rounded-full bg-emerald-500/15 px-3 py-1 text-xs font-semibold text-emerald-400">
@@ -160,6 +187,8 @@ function App() {
           </>
         )}
       </main>
+      {showStats && <StatsPanel onClose={() => setShowStats(false)} />}
+      <Analytics />
     </div>
   )
 }
