@@ -1,13 +1,13 @@
 {
-  "updatedAt": "2026-07-02T14:07:35.320Z",
+  "updatedAt": "2026-07-02T19:28:12.299Z",
   "tickets": {
     "nyc-r16": {
       "source": "TickPick",
-      "low": 1379,
-      "high": 39422,
+      "low": 1241,
+      "high": 40946,
       "url": "https://www.tickpick.com/buy-fifa-world-cup-26-round-of-16-w76-vs-w78-match-91-tickets-metlife-stadium-7-5-26-4pm/6259587/",
       "seatgeekUrl": "https://seatgeek.com/fifa-world-cup-tickets/international-soccer/2026-07-05-4-pm/17269677",
-      "checkedAt": "2026-07-02T14:07:35.320Z",
+      "checkedAt": "2026-07-02T19:28:12.299Z",
       "history": [
         {
           "t": "2026-06-21T15:06:31.798Z",
@@ -238,16 +238,21 @@
           "t": "2026-07-02T14:07:35.320Z",
           "low": 1379,
           "high": 39422
+        },
+        {
+          "t": "2026-07-02T19:28:12.299Z",
+          "low": 1241,
+          "high": 40946
         }
       ]
     },
     "miami-qf": {
       "source": "TickPick",
-      "low": 3876,
+      "low": 3642,
       "high": 108383,
       "url": "https://www.tickpick.com/buy-fifa-world-cup-26-quarter-finals-w91-vs-w92-match-99-tickets-hard-rock-stadium-7-11-26-5pm/6259553/",
       "seatgeekUrl": "https://seatgeek.com/fifa-world-cup-tickets/international-soccer/2026-07-11-5-pm/17164019",
-      "checkedAt": "2026-07-02T14:07:35.320Z",
+      "checkedAt": "2026-07-02T19:28:12.299Z",
       "history": [
         {
           "t": "2026-06-21T15:06:31.798Z",
@@ -477,6 +482,11 @@
         {
           "t": "2026-07-02T14:07:35.320Z",
           "low": 3876,
+          "high": 108383
+        },
+        {
+          "t": "2026-07-02T19:28:12.299Z",
+          "low": 3642,
           "high": 108383
         }
       ]
