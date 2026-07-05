@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-07-05T13:45:24.393Z",
+  "updatedAt": "2026-07-05T19:21:24.614Z",
   "tickets": {
     "nyc-r16": {
       "source": "TickPick",
@@ -303,11 +303,11 @@
     },
     "miami-qf": {
       "source": "TickPick",
-      "low": 3766,
-      "high": 108383,
+      "low": 3570,
+      "high": 81606,
       "url": "https://www.tickpick.com/buy-fifa-world-cup-26-quarter-finals-w91-vs-w92-match-99-tickets-hard-rock-stadium-7-11-26-5pm/6259553/",
       "seatgeekUrl": "https://seatgeek.com/fifa-world-cup-tickets/international-soccer/2026-07-11-5-pm/17164019",
-      "checkedAt": "2026-07-05T13:45:24.393Z",
+      "checkedAt": "2026-07-05T19:21:24.614Z",
       "history": [
         {
           "t": "2026-06-21T15:06:31.798Z",
@@ -598,6 +598,11 @@
           "t": "2026-07-05T13:45:24.393Z",
           "low": 3766,
           "high": 108383
+        },
+        {
+          "t": "2026-07-05T19:21:24.614Z",
+          "low": 3570,
+          "high": 81606
         }
       ]
     }
