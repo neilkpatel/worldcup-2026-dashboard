@@ -1,13 +1,13 @@
 {
-  "updatedAt": "2026-07-11T19:08:12.382Z",
+  "updatedAt": "2026-07-12T03:14:38.804Z",
   "tickets": {
     "nyc-r16": {
       "source": "TickPick",
-      "low": 2220,
-      "high": 5187,
+      "low": 1371,
+      "high": 15098,
       "url": "https://www.tickpick.com/buy-fifa-world-cup-26-round-of-16-w76-vs-w78-match-91-tickets-metlife-stadium-7-5-26-4pm/6259587/",
       "seatgeekUrl": "https://seatgeek.com/fifa-world-cup-tickets/international-soccer/2026-07-05-4-pm/17269677",
-      "checkedAt": "2026-07-11T19:08:12.382Z",
+      "checkedAt": "2026-07-12T03:14:38.804Z",
       "history": [
         {
           "t": "2026-06-21T15:06:31.798Z",
@@ -383,6 +383,11 @@
           "t": "2026-07-11T19:08:12.382Z",
           "low": 2220,
           "high": 5187
+        },
+        {
+          "t": "2026-07-12T03:14:38.804Z",
+          "low": 1371,
+          "high": 15098
         }
       ]
     },
