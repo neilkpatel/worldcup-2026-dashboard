@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import ResultCard from './ResultCard'
 import Explainer from './Explainer'
 import { lastCompletedDay } from '../recap'
+import { now as currentTime, isReplaying } from '../lib/clock'
 import { fetchMatchSummary, fetchTeamNews, groupStageComplete } from '../api'
 import { MARQUEE } from '../stakes'
 import { buildStandingMap, buildThirdPlaceRace, ordinal } from '../stats'
@@ -62,7 +63,7 @@ function timeLabel(date) {
 
 function timeAgo(date) {
   if (!date) return ''
-  const mins = Math.round((Date.now() - date.getTime()) / 60000)
+  const mins = Math.round((currentTime().getTime() - date.getTime()) / 60000)
   if (mins < 60) return `${Math.max(mins, 1)}m ago`
   const hrs = Math.round(mins / 60)
   if (hrs < 24) return `${hrs}h ago`
@@ -296,7 +297,7 @@ function upsetKind(m) {
 }
 
 function kickoffCountdown(date) {
-  const ms = date.getTime() - Date.now()
+  const ms = date.getTime() - currentTime().getTime()
   if (ms <= 0) return 'kicking off'
   const m = Math.round(ms / 60000)
   if (m < 60) return `in ${m}m`
@@ -528,7 +529,8 @@ function FixtureCard({ m, group, standingMap, summary }) {
   const [seenTotal, setSeenTotal] = useState(goalTotal)
   const [celebrate, setCelebrate] = useState(false)
   if (goalTotal !== seenTotal) {
-    if (live && goalTotal > seenTotal) setCelebrate(true)
+    // Stepping between replay days changes scores wholesale; that isn't a goal.
+    if (live && goalTotal > seenTotal && !isReplaying()) setCelebrate(true)
     setSeenTotal(goalTotal)
   }
   useEffect(() => {
@@ -966,7 +968,7 @@ function LatestResults({ matches, standingMap }) {
 
 export default function Today({ matches, groupMap, groups, news = [] }) {
   const standingMap = useMemo(() => buildStandingMap(groups), [groups])
-  const now = new Date()
+  const now = currentTime()
   const todayKey = dayKey(now)
 
   const todayMatches = matches.filter((m) => dayKey(m.date) === todayKey)

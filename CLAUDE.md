@@ -67,6 +67,32 @@ asserts 104 matches / 12 groups / every match final).
   LIVE path locally pass a normal `--user-agent`; the default headless UA exercises the
   archive path, which is a handy way to test both.
 
+## Replay a matchday (added 9/17/26)
+Because the tournament is over, a first-time visitor only ever saw its final state. The
+replay control (`src/components/ReplayBar.jsx`, rendered above the tabs) rewinds the WHOLE
+dashboard to the end of a past matchday, so it reads exactly as it did that night.
+- **Curated days + linkable:** `REPLAY_DAYS` in `src/replay.js`; `?replay=2026-06-27`
+  opens straight into that night and the URL stays in sync (`changeReplayDate` in App).
+- **One clock:** `src/lib/clock.js` (`now()` / `setClockOverride()` / `isReplaying()`).
+  Components must call `now()` instead of `new Date()` or half the UI answers from the
+  real clock and the replay contradicts itself. Already routed: `Today.jsx` (master now,
+  `kickoffCountdown`, `timeAgo`), `recap.js`, `PickEm.jsx`. Deliberately NOT routed:
+  `visits.js`, `StatsPanel`, `WatchNYC` bar-of-the-day, `MyTickets` price timestamps —
+  those are real-world, not tournament, time.
+- **The data is rewound, not faked** (`src/replay.js`): matches after the moment go back
+  to `state: 'pre'` with scores, goals and cards stripped; group tables are RECOMPUTED
+  from the results that existed that night (the standings feed only ever gives final
+  numbers); knockout fixtures whose feeders hadn't played show their slot
+  ("Winner of Match 79", "Group stage qualifier") via `buildSlotFor` + `FEEDERS`, so a
+  replay can't leak a result the site didn't know yet. A day always replays at its END —
+  reconstructing a half-finished match would mean inventing a scoreline.
+- **Guards while replaying:** Pick'em is read-only (it writes to a shared leaderboard),
+  `TeamsLeft` doesn't write `wc_teams_left_seen` (it would poison the real "N out since
+  your last visit" flourish), the live Polymarket title odds are hidden, and the goal
+  celebration is suppressed (stepping between days changes scores wholesale).
+- `FEEDERS` now lives in `src/data/bracketFeeders.js` (shared by Bracket + replay);
+  `TREE_ORDER` stayed in `Bracket.jsx`.
+
 ## Stack
 - Vite + React 19 + Tailwind v4 (`@tailwindcss/vite` plugin)
 - No backend, no API key — fetches ESPN's unofficial public API client-side (CORS is open)

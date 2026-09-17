@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { now as currentTime, isReplaying } from '../lib/clock'
 import {
   PICKS_ENABLED,
   getClientId,
@@ -34,7 +35,7 @@ function TeamCell({ team, align = 'left' }) {
 
 // One match row with Home / Draw / Away buttons. Locks once kicked off.
 function PickRow({ m, group, mine, onPick, saving }) {
-  const locked = m.state !== 'pre' || m.date <= new Date()
+  const locked = m.state !== 'pre' || m.date <= currentTime()
   const result = matchResult(m)
   const allowDraw = m.round === 'group-stage'
   const opts = allowDraw ? ['home', 'draw', 'away'] : ['home', 'away']
@@ -281,7 +282,7 @@ export default function PickEm({ matches, groupMap }) {
     )
   }
 
-  const now = new Date()
+  const now = currentTime()
   const upcoming = matches
     .filter((m) => m.state === 'pre' && m.date > now && isReal(m))
     .sort((a, b) => a.date - b.date)
@@ -305,6 +306,9 @@ export default function PickEm({ matches, groupMap }) {
   }
 
   const onPick = (m, pick) => {
+    // Pick'em writes to the shared leaderboard, so a replayed night is read-only —
+    // otherwise a visitor browsing June would "pick" games everyone already saw.
+    if (isReplaying()) return
     setSavingId(m.id)
     setPicks((prev) => {
       const rest = prev.filter((p) => !(p.client_id === clientId && p.match_id === m.id))

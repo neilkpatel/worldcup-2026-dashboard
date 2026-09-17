@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { fetchTitleOdds } from '../api'
+import { isReplaying } from '../lib/clock'
 
 // Followed-team names as Polymarket labels them — bolded so Neil's teams stand out.
 const HIGHLIGHT = new Set(['USA', 'United States', 'Norway'])
@@ -27,7 +28,8 @@ export default function TitleRace() {
     }
   }, [])
 
-  if (odds.length === 0) return null
+  // Live championship odds are meaningless on a replayed past date.
+  if (odds.length === 0 || isReplaying()) return null
   const top = odds.slice(0, TOP_N)
   const max = top[0].prob
 

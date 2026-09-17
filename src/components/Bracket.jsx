@@ -1,5 +1,6 @@
 import { useLayoutEffect, useRef, useState } from 'react'
 import { venueInfo, venueLocation, venueLocalKickoff } from '../venues'
+import { FEEDERS } from '../data/bracketFeeders'
 import FifaRank from './FifaRank'
 
 const ROUND_ORDER = ['round-of-32', 'round-of-16', 'quarterfinals', 'semifinals', 'final']
@@ -42,13 +43,6 @@ const MY_MATCHES = new Set([91, 99])
 // Official bracket structure: each knockout match → the two matches that feed it.
 // Drives the desktop connector lines. (3rd-place match 103 is a consolation off the
 // semis and isn't drawn into the main tree.)
-const FEEDERS = {
-  89: [74, 77], 90: [73, 75], 91: [76, 78], 92: [79, 80],
-  93: [83, 84], 94: [81, 82], 95: [86, 88], 96: [85, 87],
-  97: [89, 90], 98: [93, 94], 99: [91, 92], 100: [95, 96],
-  101: [97, 98], 102: [99, 100],
-  104: [101, 102],
-}
 
 // FIFA numbers knockouts by schedule slot, NOT bracket position, so numeric/date order
 // would make feeders non-adjacent and the connector lines cross. This is the order to

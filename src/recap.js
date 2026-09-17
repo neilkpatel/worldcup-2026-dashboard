@@ -3,6 +3,7 @@
 // Uses the same conservative math as stakes.js — a "clinched"/"out" claim
 // ignores tiebreakers so it is always safe.
 
+import { now as currentTime } from './lib/clock'
 import { MARQUEE } from './stakes.js'
 
 const GROUP_GAMES = 3
@@ -12,7 +13,7 @@ function dayKey(date) {
 }
 
 // Latest day before today that has at least one completed match.
-export function lastCompletedDay(matches, now = new Date()) {
+export function lastCompletedDay(matches, now = currentTime()) {
   const todayKey = dayKey(now)
   const done = matches.filter(
     (m) => m.state === 'post' && dayKey(m.date) !== todayKey && m.date < now

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { groupStageComplete } from '../api'
+import { isReplaying } from '../lib/clock'
 
 // Main-bracket rounds — each completed match here eliminates one team. The 3rd-place
 // match is excluded (both its teams already lost their semis, so it removes no one new).
@@ -115,6 +116,9 @@ export default function TeamsLeft({ matches }) {
   const [open, setOpen] = useState(false)
 
   useEffect(() => {
+    // Never let a replayed day write back — it would raise the remembered count and
+    // break the real "N out since your last visit" flourish for good.
+    if (isReplaying()) return
     if (typeof localStorage !== 'undefined') localStorage.setItem(SEEN_KEY, String(teamsLeft))
   }, [teamsLeft])
   useEffect(() => {

@@ -10,6 +10,17 @@ import {
   resetDataSource,
 } from './api'
 import StatsPanel from './components/StatsPanel'
+import ReplayBar from './components/ReplayBar'
+import { FEEDERS } from './data/bracketFeeders'
+import { setClockOverride } from './lib/clock'
+import {
+  endOfMatchday,
+  rewindMatches,
+  rewindGroups,
+  rewindNews,
+  buildSlotFor,
+  replayDay,
+} from './replay'
 import { trackVisit } from './lib/visits'
 import Today from './components/Today'
 import Groups from './components/Groups'
@@ -48,6 +59,12 @@ function App() {
   const [error, setError] = useState(null)
   const [archivedAt, setArchivedAt] = useState(null)
   const [loading, setLoading] = useState(true)
+  // ?replay=2026-06-27 opens straight into that night, so a replay can be linked.
+  const [replayDate, setReplayDate] = useState(() => {
+    if (typeof window === 'undefined') return null
+    const asked = new URLSearchParams(window.location.search).get('replay')
+    return asked && replayDay(asked) ? asked : null
+  })
 
   // Hidden owner-stats panel: tap the ⚽ logo 5× (within ~1.2s of each tap) to
   // unlock. Kept silent (no pointer cursor) so casual visitors never find it.
@@ -101,10 +118,44 @@ function App() {
     }
   }, [])
 
-  const groupMap = useMemo(() => buildGroupMap(groups), [groups])
-  const liveCount = matches.filter((m) => m.state === 'in').length
+  // Replay mode rewinds the whole dashboard to the end of a past matchday. The clock
+  // override is set during render (not in an effect) so the first paint of a replayed
+  // day already agrees with the rewound data instead of flashing the final tournament.
+  const replayAt = useMemo(() => {
+    const at = replayDate ? endOfMatchday(replayDate) : null
+    setClockOverride(at)
+    return at
+  }, [replayDate])
+
+  const viewMatches = useMemo(
+    () =>
+      replayAt ? rewindMatches(matches, replayAt, buildSlotFor(matches, replayAt, FEEDERS)) : matches,
+    [matches, replayAt]
+  )
+  const viewGroups = useMemo(
+    () => (replayAt ? rewindGroups(groups, matches, replayAt) : groups),
+    [groups, matches, replayAt]
+  )
+  const viewNews = useMemo(
+    () => (replayAt ? rewindNews(news, replayAt) : news),
+    [news, replayAt]
+  )
+
+  // Keep the URL in step so a replayed night can be linked or reloaded.
+  const changeReplayDate = (date) => {
+    setReplayDate(date)
+    if (typeof window === 'undefined') return
+    const url = new URL(window.location.href)
+    if (date) url.searchParams.set('replay', date)
+    else url.searchParams.delete('replay')
+    window.history.replaceState({}, '', url)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  const groupMap = useMemo(() => buildGroupMap(viewGroups), [viewGroups])
+  const liveCount = viewMatches.filter((m) => m.state === 'in').length
   // A knockout game in progress lights a pulse on the Bracket tab.
-  const knockoutLive = matches.some((m) => isKnockoutRound(m.round) && m.state === 'in')
+  const knockoutLive = viewMatches.some((m) => isKnockoutRound(m.round) && m.state === 'in')
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">
@@ -189,24 +240,29 @@ function App() {
             . Source: ESPN.
           </div>
         ) : null}
+        {!loading && (
+          <div className="mb-4">
+            <ReplayBar value={replayDate} onChange={changeReplayDate} />
+          </div>
+        )}
         {loading ? (
           <p className="py-16 text-center text-slate-500">Loading tournament data…</p>
         ) : (
           <>
             {tab === 'Today' && (
-              <Today matches={matches} groupMap={groupMap} groups={groups} news={news} />
+              <Today matches={viewMatches} groupMap={groupMap} groups={viewGroups} news={viewNews} />
             )}
-            {tab === "Pick'em" && <PickEm matches={matches} groupMap={groupMap} />}
+            {tab === "Pick'em" && <PickEm matches={viewMatches} groupMap={groupMap} />}
             {tab === 'Bars' && <WatchNYC />}
-            {tab === 'Groups' && <Groups groups={groups} matches={matches} />}
-            {tab === 'Golden Boot' && <GoldenBoot matches={matches} />}
-            {tab === 'Bracket' && <Bracket matches={matches} />}
+            {tab === 'Groups' && <Groups groups={viewGroups} matches={viewMatches} />}
+            {tab === 'Golden Boot' && <GoldenBoot matches={viewMatches} />}
+            {tab === 'Bracket' && <Bracket matches={viewMatches} />}
             {tab === 'Schedule' && (
-              <Schedule matches={matches} groupMap={groupMap} groups={groups} />
+              <Schedule matches={viewMatches} groupMap={groupMap} groups={viewGroups} />
             )}
             {MyTickets && tab === "Neil's Tickets" && (
               <Suspense fallback={null}>
-                <MyTickets matches={matches} />
+                <MyTickets matches={viewMatches} />
               </Suspense>
             )}
           </>
