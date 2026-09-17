@@ -7,8 +7,18 @@ const NEWS =
 const SUMMARY =
   'https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/summary'
 
-// Full tournament window — ESPN returns all 104 matches in one call
+// Full tournament window — ESPN returns all 104 matches in one call.
+// As of 9/17/26 ESPN 400s on the explicit date RANGE it accepted all tournament long,
+// which blanked every tab on the live site. The season year returns the same 104
+// matches, so ask for that first and keep the range as a fallback in case ESPN
+// restores it (the year alone is the more brittle of the two if they ever reuse it
+// for a later edition, hence keeping both).
 const TOURNAMENT_DATES = '20260611-20260719'
+const TOURNAMENT_YEAR = '2026'
+const SCOREBOARD_QUERIES = [
+  `dates=${TOURNAMENT_YEAR}&limit=200`,
+  `dates=${TOURNAMENT_DATES}&limit=200`,
+]
 
 // Rewrite ESPN's awkward knockout placeholder slot names into plain English. The
 // feeder index ("Round of 32 7") maps cleanly to an ABSOLUTE FIFA match number
@@ -138,10 +148,25 @@ export function groupStageComplete(matches) {
 }
 
 export async function fetchSchedule() {
-  const res = await fetch(`${SCOREBOARD}?dates=${TOURNAMENT_DATES}&limit=200`)
-  if (!res.ok) throw new Error(`scoreboard request failed: ${res.status}`)
-  const data = await res.json()
-  return (data.events ?? [])
+  let events = null
+  let lastError = null
+  for (const query of SCOREBOARD_QUERIES) {
+    try {
+      const res = await fetch(`${SCOREBOARD}?${query}`)
+      if (!res.ok) throw new Error(`scoreboard request failed: ${res.status}`)
+      const data = await res.json()
+      const found = data.events ?? []
+      // An empty list means the query shape stopped working, not that the World Cup
+      // vanished, so fall through to the next one rather than rendering an empty site.
+      if (!found.length) throw new Error('scoreboard returned no matches')
+      events = found
+      break
+    } catch (err) {
+      lastError = err
+    }
+  }
+  if (!events) throw lastError ?? new Error('scoreboard request failed')
+  return events
     .map(parseEvent)
     .sort((a, b) => a.date - b.date)
     .map((m, i) => ({
