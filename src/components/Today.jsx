@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import ResultCard from './ResultCard'
 import Explainer from './Explainer'
-import { lastCompletedDay } from '../recap'
+import { recentCompletedDays } from '../recap'
 import { now as currentTime, isReplaying } from '../lib/clock'
 import { fetchMatchSummary, fetchTeamNews, groupStageComplete } from '../api'
 import { MARQUEE } from '../stakes'
@@ -13,6 +13,7 @@ import FifaRank from './FifaRank'
 import WhatsNew from './WhatsNew'
 import TitleRace from './TitleRace'
 import TeamsLeft from './TeamsLeft'
+import MatchCard from './MatchCard'
 
 // Lazily fetch per-match recap detail (scorers, stats, headline) for a set of
 // finished matches. Returns { [id]: summary }. Best-effort per match so one bad
@@ -79,6 +80,9 @@ const KO_ROUND_NAME = {
   '3rd-place-match': '3rd-place match',
   final: 'Final',
 }
+
+// The teams pinned in the Following panel.
+const FOLLOWED = ['USA', 'IRN', 'NOR']
 
 const QUAL_TONE = {
   in: { pill: 'bg-emerald-500/15 text-emerald-300', icon: '✅' },
@@ -966,13 +970,89 @@ function LatestResults({ matches, standingMap }) {
   )
 }
 
+// Results before the most recent day, as compact cards. Grouped by ROUND once the
+// knockouts start (a quarterfinal round spread over three days reads as one thing, and
+// one-match days would otherwise leave a row of gaps), and by day during the group
+// stage. Deliberately lighter than the ResultCard treatment above it: no per-match
+// summary fetches, just the scoreline.
+function resultSections(dayGroups) {
+  const sections = []
+  for (const match of dayGroups.flatMap((d) => d.matches)) {
+    const knockout = match.round !== 'group-stage'
+    const key = knockout ? match.round : dayKey(match.date)
+    let section = sections.find((x) => x.key === key)
+    if (!section) {
+      section = { key, knockout, round: match.round, matches: [] }
+      sections.push(section)
+    }
+    section.matches.push(match)
+  }
+  for (const section of sections) section.matches.sort((a, b) => a.date - b.date)
+  return sections
+}
+
+// "Saturday, July 11" for one day, "July 9-11" for a round played across several.
+function sectionDates(matches) {
+  const first = matches[0].date
+  const last = matches[matches.length - 1].date
+  if (dayKey(first) === dayKey(last)) return dateLabel(first)
+  const sameMonth = first.getMonth() === last.getMonth()
+  const from = first.toLocaleDateString([], { month: 'long', day: 'numeric' })
+  const to = last.toLocaleDateString([], sameMonth ? { day: 'numeric' } : { month: 'long', day: 'numeric' })
+  return `${from}-${to}`
+}
+
+function EarlierResults({ dayGroups, groupMap, wide = false }) {
+  const sections = useMemo(() => resultSections(dayGroups), [dayGroups])
+  if (sections.length === 0) return null
+  return (
+    <section className="mb-8">
+      <h2 className="mb-3 text-sm font-semibold tracking-wide text-slate-400 uppercase">
+        ⏪ Before that
+      </h2>
+      <div className="space-y-5">
+        {sections.map((section) => (
+          <div key={section.key}>
+            <h3 className="mb-2 text-xs font-medium text-slate-500">
+              {section.knockout ? `${KO_ROUND_NAME[section.round] ?? 'Knockout'} · ` : ''}
+              {sectionDates(section.matches)}
+            </h3>
+            <div
+              className={`grid grid-cols-1 gap-3 sm:grid-cols-2 ${
+                // Three across only when it fills the row: a 4-match round reads better
+                // as a 2x2 block than as 3 cards and a gap.
+                wide && section.matches.length !== 4 && section.matches.length > 2
+                  ? 'lg:grid-cols-3'
+                  : ''
+              }`}
+            >
+              {section.matches.map((m) => (
+                <MatchCard key={m.id} match={m} groupMap={groupMap} />
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  )
+}
+
 export default function Today({ matches, groupMap, groups, news = [] }) {
   const standingMap = useMemo(() => buildStandingMap(groups), [groups])
   const now = currentTime()
   const todayKey = dayKey(now)
 
   const todayMatches = matches.filter((m) => dayKey(m.date) === todayKey)
-  const recapMatches = lastCompletedDay(matches, now) ?? []
+  // The most recent completed day gets the full treatment; the days behind it fill out
+  // the page, which otherwise ends at a single match once the tournament is over.
+  // Keyed on the day, not the raw clock, so this doesn't recompute on every render.
+  const completedDays = useMemo(
+    () => recentCompletedDays(matches, now),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [matches, todayKey]
+  )
+  const recapMatches = completedDays[0]?.matches ?? []
+  const earlierDays = completedDays.slice(1)
 
   // Next match day's slate — used on off-days (nothing scheduled today)
   const nextMatch = matches.find((m) => m.date > now)
@@ -999,6 +1079,21 @@ export default function Today({ matches, groupMap, groups, news = [] }) {
 
   const tournamentOver = todayMatches.length === 0 && nextDayMatches.length === 0
 
+  // The followed-teams panel hides itself once every followed team is out (always true
+  // after the final). Work that out here too, so the results can take the whole width
+  // instead of leaving an empty column beside them.
+  const followedThirds = useMemo(() => buildThirdPlaceRace(groups), [groups])
+  const aliveFollowed = useMemo(
+    () =>
+      FOLLOWED.filter(
+        (a) =>
+          matches.some((m) => m.home.abbrev === a || m.away.abbrev === a) &&
+          followedQual(a, matches, groups, followedThirds)?.tone !== 'out'
+      ),
+    [matches, groups, followedThirds]
+  )
+  const hasAside = aliveFollowed.length > 0
+
   return (
     <div>
       {/* ── Transient "what's new" toast (once per device, auto-dismisses) ── */}
@@ -1012,9 +1107,9 @@ export default function Today({ matches, groupMap, groups, news = [] }) {
 
       {/* Two-column dashboard on wide screens: game feed (left) + followed teams (right).
           On mobile it stacks game-first under the counter + odds bar. */}
-      <div className="lg:grid lg:grid-cols-3 lg:items-start lg:gap-6">
+      <div className={hasAside ? 'lg:grid lg:grid-cols-3 lg:items-start lg:gap-6' : ''}>
         {/* ── Game feed: today's fixtures → latest results → news ── */}
-        <div className="lg:order-1 lg:col-span-2">
+        <div className={hasAside ? 'lg:order-1 lg:col-span-2' : ''}>
           {todayMatches.length > 0 ? (
             <Scores
               title={`⚽ Today · ${dateLabel(now)}`}
@@ -1033,19 +1128,22 @@ export default function Today({ matches, groupMap, groups, news = [] }) {
           ) : null}
 
           {tournamentOver && (
-            <p className="py-16 text-center text-slate-500">
+            <p className="pb-8 pt-2 text-center text-slate-500">
               No upcoming matches — the tournament is over.
             </p>
           )}
 
           <LatestResults matches={recapMatches} standingMap={standingMap} />
+          <EarlierResults dayGroups={earlierDays} groupMap={groupMap} wide={!hasAside} />
           <News previews={previews} headlines={headlineItems} />
         </div>
 
         {/* ── Followed teams ── */}
-        <aside className="lg:order-2 lg:col-span-1">
-          <FollowingPanel abbrevs={['USA', 'IRN', 'NOR']} matches={matches} groups={groups} />
-        </aside>
+        {hasAside && (
+          <aside className="lg:order-2 lg:col-span-1">
+            <FollowingPanel abbrevs={FOLLOWED} matches={matches} groups={groups} />
+          </aside>
+        )}
       </div>
 
       <Explainer />

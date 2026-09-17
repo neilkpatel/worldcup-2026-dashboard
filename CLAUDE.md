@@ -67,6 +67,20 @@ asserts 104 matches / 12 groups / every match final).
   LIVE path locally pass a normal `--user-agent`; the default headless UA exercises the
   archive path, which is a handy way to test both.
 
+## Today page: how far back the results go (9/17/26)
+Once the tournament ended, Today showed exactly one result (the final) and a half-empty
+page. `recentCompletedDays()` in `src/recap.js` now walks back from the most recent
+completed day until it has at least 8 matches (max 8 days); the newest day keeps the full
+`LatestResults` treatment and the rest render in `EarlierResults` ("⏪ Before that") as
+compact `MatchCard`s with no per-match summary fetches.
+- Those earlier results group by ROUND once the knockouts start ("Quarterfinals · July
+  9-11") and by DAY during the group stage, since a round spread over three days reads as
+  one block and one-match days would otherwise leave a row of gaps.
+- `FollowingPanel` hides itself when every followed team is out (always true after the
+  final), so Today now drops to a single full-width column in that case instead of leaving
+  an empty third. Three-across only when the row fills: a 4-match round renders 2x2.
+- All of this respects replay mode, because it reads the rewound match list.
+
 ## Replay a matchday (added 9/17/26)
 Because the tournament is over, a first-time visitor only ever saw its final state. The
 replay control (`src/components/ReplayBar.jsx`, rendered above the tabs) rewinds the WHOLE

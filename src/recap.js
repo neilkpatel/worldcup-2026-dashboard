@@ -23,6 +23,43 @@ export function lastCompletedDay(matches, now = currentTime()) {
   return done.filter((m) => dayKey(m.date) === dayKey(latest.date))
 }
 
+/**
+ * Completed match days before today, newest first, as `{ key, date, matches }`.
+ *
+ * The Today page used to show only the single most recent day, which reads as an empty
+ * page at the end of a tournament: the final is one game. So keep walking back through
+ * earlier days until there are enough matches to fill the page.
+ */
+export function recentCompletedDays(
+  matches,
+  now = currentTime(),
+  { minMatches = 8, maxDays = 8 } = {}
+) {
+  const todayKey = dayKey(now)
+  const done = matches
+    .filter((m) => m.state === 'post' && dayKey(m.date) !== todayKey && m.date < now)
+    .sort((a, b) => b.date - a.date)
+
+  const days = []
+  let count = 0
+  for (const match of done) {
+    const key = dayKey(match.date)
+    let day = days.find((d) => d.key === key)
+    if (!day) {
+      // Only the decision to START another day is capped — a day is never shown
+      // half-finished, so the totals here are "at least", not exact.
+      if (days.length >= maxDays || (days.length > 0 && count >= minMatches)) break
+      day = { key, date: match.date, matches: [] }
+      days.push(day)
+    }
+    day.matches.push(match)
+    count += 1
+  }
+  // Within a day, kickoff order reads more naturally than reverse.
+  for (const day of days) day.matches.sort((a, b) => a.date - b.date)
+  return days
+}
+
 function winnerLoser(match) {
   if (match.home.winner) return [match.home, match.away]
   if (match.away.winner) return [match.away, match.home]
