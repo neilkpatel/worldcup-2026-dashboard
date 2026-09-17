@@ -20,6 +20,36 @@ const SCOREBOARD_QUERIES = [
   `dates=${TOURNAMENT_DATES}&limit=200`,
 ]
 
+// Archived copy of the finished tournament (public/espn-archive.json, refreshed by
+// `npm run archive`). The World Cup is over, so this data is final — whenever ESPN is
+// unreachable or changes its query shape again, the dashboard fills from here instead
+// of rendering an empty site.
+const ARCHIVE_URL = `${import.meta.env.BASE_URL ?? '/'}espn-archive.json`
+
+// Read by App.jsx to label the source. Reset at the start of every refresh cycle.
+export const dataSource = { archivedAt: null }
+export function resetDataSource() {
+  dataSource.archivedAt = null
+}
+
+let archivePromise = null
+async function loadArchive() {
+  if (!archivePromise) {
+    archivePromise = fetch(ARCHIVE_URL)
+      .then((res) => {
+        if (!res.ok) throw new Error(`archive request failed: ${res.status}`)
+        return res.json()
+      })
+      .catch((err) => {
+        archivePromise = null // let a later refresh retry
+        throw err
+      })
+  }
+  const archive = await archivePromise
+  dataSource.archivedAt = archive.archivedAt ?? null
+  return archive
+}
+
 // Rewrite ESPN's awkward knockout placeholder slot names into plain English. The
 // feeder index ("Round of 32 7") maps cleanly to an ABSOLUTE FIFA match number
 // (R32 = 72+N, R16 = 88+N, QF = 96+N, SF = 100+N — verified against the schedule),
@@ -149,7 +179,6 @@ export function groupStageComplete(matches) {
 
 export async function fetchSchedule() {
   let events = null
-  let lastError = null
   for (const query of SCOREBOARD_QUERIES) {
     try {
       const res = await fetch(`${SCOREBOARD}?${query}`)
@@ -161,11 +190,11 @@ export async function fetchSchedule() {
       if (!found.length) throw new Error('scoreboard returned no matches')
       events = found
       break
-    } catch (err) {
-      lastError = err
+    } catch {
+      // try the next query shape, then the archive
     }
   }
-  if (!events) throw lastError ?? new Error('scoreboard request failed')
+  if (!events) events = (await loadArchive()).scoreboard?.events ?? []
   return events
     .map(parseEvent)
     .sort((a, b) => a.date - b.date)
@@ -177,9 +206,15 @@ export async function fetchSchedule() {
 }
 
 export async function fetchStandings() {
-  const res = await fetch(STANDINGS)
-  if (!res.ok) throw new Error(`standings request failed: ${res.status}`)
-  const data = await res.json()
+  let data
+  try {
+    const res = await fetch(STANDINGS)
+    if (!res.ok) throw new Error(`standings request failed: ${res.status}`)
+    data = await res.json()
+    if (!(data.children ?? []).length) throw new Error('standings returned no groups')
+  } catch {
+    data = (await loadArchive()).standings ?? {}
+  }
   return (data.children ?? []).map((group) => ({
     name: group.name,
     teams: group.standings.entries
@@ -208,9 +243,15 @@ export async function fetchStandings() {
 // Editorial World Cup headlines from ESPN's news feed. Best-effort: the caller
 // treats a failure as "no headlines" rather than failing the whole dashboard.
 export async function fetchNews() {
-  const res = await fetch(`${NEWS}?limit=50`)
-  if (!res.ok) throw new Error(`news request failed: ${res.status}`)
-  const data = await res.json()
+  let data
+  try {
+    const res = await fetch(`${NEWS}?limit=50`)
+    if (!res.ok) throw new Error(`news request failed: ${res.status}`)
+    data = await res.json()
+    if (!(data.articles ?? []).length) throw new Error('news returned no articles')
+  } catch {
+    data = (await loadArchive()).news ?? {}
+  }
   return (data.articles ?? [])
     .map((a) => ({
       id: a.id,

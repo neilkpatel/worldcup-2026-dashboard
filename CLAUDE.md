@@ -46,6 +46,27 @@ Runs locally at http://localhost:5173 via `npm run dev`.
     metric, not sensitive) but un-spoofable except via the +1 RPC — same trust model as Pick'em.
   - Counts raw pageviews incl. bots; for clean human numbers use the Vercel dashboard.
 
+## Never-dark rule: the archived tournament (added 9/17/26)
+The dashboard is shown in interviews, so it must never render empty because a third
+party changed something. `public/espn-archive.json` (1.4 MB, ~131 KB gzipped) holds the
+FINAL tournament: all 104 matches, 12 group tables and 50 headlines. `npm run archive`
+(`scripts/archive-espn.mjs`) regenerates it and refuses to write a partial copy (it
+asserts 104 matches / 12 groups / every match final).
+- `fetchSchedule` / `fetchStandings` / `fetchNews` in `api.js` each fall back to the
+  archive when the live call fails OR returns an empty list (an empty list means the
+  query shape broke, not that the World Cup vanished).
+- `dataSource.archivedAt` (reset each refresh via `resetDataSource()`) tells `App.jsx`
+  to show a neutral "📦 Final tournament archive" note with the as-of date and source,
+  instead of the old red error banner. The red banner now only appears if the archive
+  is unreachable too.
+- **What broke 9/17/26:** ESPN began returning 400 for the date RANGE
+  `dates=20260611-20260719` that had worked all tournament (400 for curl, 403 for a
+  browser UA; single dates and `dates=2026` still return 200). Every tab went empty.
+  `SCOREBOARD_QUERIES` now tries `dates=2026` first and keeps the range as a fallback.
+- ESPN's CDN also blocks headless Chrome outright ("Access Denied"), so to verify the
+  LIVE path locally pass a normal `--user-agent`; the default headless UA exercises the
+  archive path, which is a handy way to test both.
+
 ## Stack
 - Vite + React 19 + Tailwind v4 (`@tailwindcss/vite` plugin)
 - No backend, no API key — fetches ESPN's unofficial public API client-side (CORS is open)
@@ -53,7 +74,8 @@ Runs locally at http://localhost:5173 via `npm run dev`.
 
 ## Data source: ESPN unofficial API
 - **Scoreboard (all 104 matches in one call):**
-  `https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard?dates=20260611-20260719&limit=200`
+  `https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard?dates=2026&limit=200`
+  (the old `dates=20260611-20260719` range now 400s — see the never-dark rule above)
   - `events[].status.type.state` is `'pre' | 'in' | 'post'`
   - `events[].competitions[0].competitors[]` has `homeAway`, `team`, `score`, `winner`
   - Knockout matches exist as placeholders ("Semifinal 1 Winner") until teams are known

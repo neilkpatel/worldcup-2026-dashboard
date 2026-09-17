@@ -1,6 +1,14 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { Analytics } from '@vercel/analytics/react'
-import { fetchSchedule, fetchStandings, fetchNews, buildGroupMap, isKnockoutRound } from './api'
+import {
+  fetchSchedule,
+  fetchStandings,
+  fetchNews,
+  buildGroupMap,
+  isKnockoutRound,
+  dataSource,
+  resetDataSource,
+} from './api'
 import StatsPanel from './components/StatsPanel'
 import { trackVisit } from './lib/visits'
 import Today from './components/Today'
@@ -38,6 +46,7 @@ function App() {
   const [news, setNews] = useState([])
   const [updatedAt, setUpdatedAt] = useState(null)
   const [error, setError] = useState(null)
+  const [archivedAt, setArchivedAt] = useState(null)
   const [loading, setLoading] = useState(true)
 
   // Hidden owner-stats panel: tap the ⚽ logo 5× (within ~1.2s of each tap) to
@@ -65,6 +74,7 @@ function App() {
     let cancelled = false
     async function load() {
       try {
+        resetDataSource()
         const [schedule, standings, headlines] = await Promise.all([
           fetchSchedule(),
           fetchStandings(),
@@ -75,6 +85,7 @@ function App() {
         setGroups(standings)
         setNews(headlines)
         setUpdatedAt(new Date())
+        setArchivedAt(dataSource.archivedAt)
         setError(null)
       } catch (err) {
         if (!cancelled) setError(err.message)
@@ -159,11 +170,25 @@ function App() {
       </header>
 
       <main className="mx-auto max-w-5xl px-4 py-6">
-        {error && (
+        {error ? (
           <div className="mb-4 rounded-lg border border-red-800 bg-red-950/50 px-4 py-3 text-sm text-red-300">
             Couldn't reach ESPN ({error}) — showing last loaded data.
           </div>
-        )}
+        ) : archivedAt ? (
+          // ESPN is unreachable but the tournament is finished, so the archived copy is
+          // the complete, final record. Say where the numbers come from rather than
+          // letting them read as live.
+          <div className="mb-4 rounded-lg border border-slate-700 bg-slate-900/60 px-4 py-3 text-sm text-slate-300">
+            📦 Final tournament archive — ESPN's live feed is unavailable, so this is the
+            completed 2026 World Cup as recorded on{' '}
+            {new Date(archivedAt).toLocaleDateString('en-US', {
+              month: 'long',
+              day: 'numeric',
+              year: 'numeric',
+            })}
+            . Source: ESPN.
+          </div>
+        ) : null}
         {loading ? (
           <p className="py-16 text-center text-slate-500">Loading tournament data…</p>
         ) : (
